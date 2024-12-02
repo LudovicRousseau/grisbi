@@ -38,6 +38,15 @@ GRIBSI_BUNDLE_PATH=. gtk-mac-bundler MacOS/Grisbi.bundle
 
 ./MacOS/manual_add.sh
 
+SIGN_ID="E2CY6P89NY"
+
+codesign --sign "$SIGN_ID" --timestamp MacOS/dist/Grisbi.app/Contents/MacOS/Grisbi
+codesign --sign "$SIGN_ID" --timestamp MacOS/dist/Grisbi.app/Contents/Resources/lib/*.dylib
+codesign --sign "$SIGN_ID" --timestamp MacOS/dist/Grisbi.app/Contents/Resources/lib/*/*/*/*.so
+codesign --sign "$SIGN_ID" --timestamp MacOS/dist/Grisbi.app/Contents/Resources/lib/*/*/*/*/*.so
+
+# codesign --verify --display --verbose --verbose MacOS/dist/Grisbi.app/Contents/MacOS/Grisbi
+
 ./MacOS/create-dmg.sh \
 	--volname Grisbi \
 	--volicon MacOS/Grisbi.icns \
