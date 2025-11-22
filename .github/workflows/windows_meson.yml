@@ -27,7 +27,7 @@ jobs:
             freetype:p
             gcc:p
             gettext:p
-            gtk3:p
+            gtk4:p
             libgsf:p
             librsvg:p
             libxslt:p

@@ -10,9 +10,8 @@ if [ "$RUNNER_OS" == "Linux" ]; then
 		autopoint \
 		build-essential \
 		gettext \
-		libgoffice-0.10-dev \
 		libgsf-1-dev \
-		libgtk-3-dev \
+		libgtk-4-dev \
 		libofx-dev \
 		libssl-dev \
 		libtool-bin m4 \
