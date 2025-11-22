@@ -1761,7 +1761,7 @@
 				CODE_SIGN_IDENTITY = "-";
 				DEAD_CODE_STRIPPING = YES;
 				HEADER_SEARCH_PATHS = (
-					"$HOMEBREW_PATH/opt/gtk+3/include/gtk-3.0",
+					"$HOMEBREW_PATH/opt/gtk4/include/gtk-4.0",
 					"$HOMEBREW_PATH/opt/glib/include/glib-2.0",
 					"$HOMEBREW_PATH/opt/glib/lib/glib-2.0/include",
 					"$HOMEBREW_PATH/opt/pango/include/pango-1.0",
@@ -1777,6 +1777,8 @@
 					$HOMEBREW_PATH/opt/openssl/include,
 					"$HOMEBREW_PATH/opt/gtk-mac-integration/include/gtkmacintegration",
 					$HOMEBREW_PATH/opt/harfbuzz/include/harfbuzz,
+					"$HOMEBREW_PATH/opt/graphene/include/graphene-1.0",
+					"$HOMEBREW_PATH/opt/graphene/lib/graphene-1.0/include",
 				);
 				LIBRARY_SEARCH_PATHS = (
 					"$(inherited)",
@@ -1787,7 +1789,7 @@
 					$HOMEBREW_PATH/opt/pango/lib,
 					$HOMEBREW_PATH/opt/libofx/lib,
 					"$HOMEBREW_PATH/opt/gdk-pixbuf/lib",
-					"$HOMEBREW_PATH/opt/gtk+3/lib",
+					$HOMEBREW_PATH/opt/gtk4/lib,
 					$HOMEBREW_PATH/opt/glib/lib,
 					$HOMEBREW_PATH/opt/cairo/lib,
 				);
@@ -1803,7 +1805,7 @@
 				CODE_SIGN_IDENTITY = "-";
 				DEAD_CODE_STRIPPING = YES;
 				HEADER_SEARCH_PATHS = (
-					"$HOMEBREW_PATH/opt/gtk+3/include/gtk-3.0",
+					"$HOMEBREW_PATH/opt/gtk4/include/gtk-4.0",
 					"$HOMEBREW_PATH/opt/glib/include/glib-2.0",
 					"$HOMEBREW_PATH/opt/glib/lib/glib-2.0/include",
 					"$HOMEBREW_PATH/opt/pango/include/pango-1.0",
@@ -1819,6 +1821,8 @@
 					$HOMEBREW_PATH/opt/openssl/include,
 					"$HOMEBREW_PATH/opt/gtk-mac-integration/include/gtkmacintegration",
 					$HOMEBREW_PATH/opt/harfbuzz/include/harfbuzz,
+					"$HOMEBREW_PATH/opt/graphene/include/graphene-1.0",
+					"$HOMEBREW_PATH/opt/graphene/lib/graphene-1.0/include",
 				);
 				LIBRARY_SEARCH_PATHS = (
 					"$(inherited)",
@@ -1829,7 +1833,7 @@
 					$HOMEBREW_PATH/opt/pango/lib,
 					$HOMEBREW_PATH/opt/libofx/lib,
 					"$HOMEBREW_PATH/opt/gdk-pixbuf/lib",
-					"$HOMEBREW_PATH/opt/gtk+3/lib",
+					$HOMEBREW_PATH/opt/gtk4/lib,
 					$HOMEBREW_PATH/opt/glib/lib,
 					$HOMEBREW_PATH/opt/cairo/lib,
 				);
