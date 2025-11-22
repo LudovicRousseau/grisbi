@@ -270,8 +270,8 @@ if host_machine.system() == 'darwin'
   add_languages('objc', native : false)
   conf_data.set('GTKOSXAPPLICATION', true)
   conf_data.set('OS_OSX', true)
-  gtk_mac_integration_dep = dependency('gtk-mac-integration')
-  grisbi_dep += gtk_mac_integration_dep
+  #gtk_mac_integration_dep = dependency('gtk-mac-integration')
+  #grisbi_dep += gtk_mac_integration_dep
 endif
 
 # special for Windows
