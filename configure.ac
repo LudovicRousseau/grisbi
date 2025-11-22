@@ -23,7 +23,7 @@ AC_SUBST(GRISBI_MICRO_VERSION, grisbi_micro_version)
 
 # Dependencies
 GLIB_REQUIRED=2.56
-GTK_REQUIRED=3.24
+GTK_REQUIRED=4.0
 LIBGSF_REQUIRED=1.14
 
 # Optionnel
@@ -79,7 +79,7 @@ dnl ================================================================
 dnl Main Grisbi libraries
 dnl ================================================================
 PKG_CHECK_MODULES(ZLIB, [zlib], have_zlib_pc=yes, have_zlib_pc=no)
-PKG_CHECK_MODULES(GTK, gtk+-3.0 >= $GTK_REQUIRED)
+PKG_CHECK_MODULES(GTK, gtk4 >= $GTK_REQUIRED)
 PKG_CHECK_MODULES(GLIB, glib-2.0 >= $GLIB_REQUIRED)
 PKG_CHECK_MODULES(LIBGSF, libgsf-1 >= $LIBGSF_REQUIRED)
 AS_IF([test "$have_zlib_pc" = "no"],
