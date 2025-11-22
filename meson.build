@@ -39,18 +39,13 @@ if get_option('debug') or minor_version % 2 == 1
 endif
 
 # dependencies
-if get_option('goffice')
-  goffice_dep = dependency('libgoffice-0.10')
-else
-  goffice_dep = dependency('libgsf-1')
-endif
 gtk_dep = dependency('gtk+-3.0')
 libofx_dep = dependency('libofx')
 libxml2_dep = dependency('libxml-2.0')
 openssl_dep = dependency('openssl')
 zlib_dep = dependency('zlib')
 
-grisbi_dep = [goffice_dep, gtk_dep, libofx_dep, libxml2_dep, openssl_dep, zlib_dep]
+grisbi_dep = [gtk_dep, libofx_dep, libxml2_dep, openssl_dep, zlib_dep]
 
 incdir = include_directories(['src', 'src/widgets', 'src/etats', 'src/prefs'])
 
