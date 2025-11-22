@@ -39,7 +39,7 @@ if get_option('debug') or minor_version % 2 == 1
 endif
 
 # dependencies
-gtk_dep = dependency('gtk+-3.0')
+gtk_dep = dependency('gtk4')
 libofx_dep = dependency('libofx')
 libxml2_dep = dependency('libxml-2.0')
 openssl_dep = dependency('openssl')
