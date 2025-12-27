@@ -113,10 +113,14 @@ gboolean gsb_file_util_get_contents (const gchar *filename,
     int iterator = 0;
     gboolean eof = 0;
 	gchar *os_filename;
+	GError *error = NULL;
 
 #ifdef G_OS_WIN32
-	os_filename = g_locale_from_utf8(filename, -1, NULL, NULL, NULL);
-#error pouet
+	os_filename = g_locale_from_utf8(filename, -1, NULL, NULL, &error);
+	if (error)
+	{
+		printf("Error: %s\n", error->message);
+	}
 #else
 	os_filename = g_strdup(filename);
 #endif /* G_OS_WIN32 */
