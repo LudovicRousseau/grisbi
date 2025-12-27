@@ -116,6 +116,7 @@ gboolean gsb_file_util_get_contents (const gchar *filename,
 
 #ifdef G_OS_WIN32
 	os_filename = g_locale_from_utf8(filename, -1, NULL, NULL, NULL);
+#error pouet
 #else
 	os_filename = g_strdup(filename);
 #endif /* G_OS_WIN32 */
