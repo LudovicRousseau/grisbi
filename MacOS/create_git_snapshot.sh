@@ -62,3 +62,6 @@ touch .this-is-the-create-dmg-repo
 )
 
 rm -r "$BUILD_DIR"
+
+# show the directory
+open MacOS
