@@ -111,6 +111,9 @@ static GtkWidget *debug_print_backtrace ( void )
     backtrace_strings = backtrace_symbols (backtrace_content, backtrace_size);
 
 	text = g_strconcat(text, "Grisbi version: " VERSION "\n", NULL);
+#ifdef DEBUG
+	text = g_strconcat(text, "git hash: " GIT_HASH "\n", NULL);
+#endif
 	g_print ("%s", text);
 
     g_print ("%s : %d elements in stack.\n", debug_get_debug_time(), backtrace_size);
