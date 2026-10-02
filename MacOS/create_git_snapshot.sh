@@ -49,6 +49,7 @@ touch .this-is-the-create-dmg-repo
 	--icon-size 96 \
 	--app-drop-link 500 250 \
 	--icon "Grisbi.app" 150 250 \
+	--add-file README.html README.html 325 100 \
 	Grisbi-"$GRISBI_VERSION"-"$ARCH".dmg \
 	dist
 )
