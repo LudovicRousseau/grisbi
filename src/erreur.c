@@ -17,8 +17,7 @@
 /*  GNU General Public License for more details.                              */
 /*                                                                            */
 /*  You should have received a copy of the GNU General Public License         */
-/*  along with this program; if not, write to the Free Software               */
-/*  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA */
+/*  along with this program; if not, see <https://www.gnu.org/licenses/>.     */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -112,6 +111,9 @@ static GtkWidget *debug_print_backtrace ( void )
     backtrace_strings = backtrace_symbols (backtrace_content, backtrace_size);
 
 	text = g_strconcat(text, "Grisbi version: " VERSION "\n", NULL);
+#ifdef DEBUG
+	text = g_strconcat(text, "git hash: " GIT_HASH "\n", NULL);
+#endif
 	g_print ("%s", text);
 
     g_print ("%s : %d elements in stack.\n", debug_get_debug_time(), backtrace_size);

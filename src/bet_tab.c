@@ -16,8 +16,7 @@
 /*  GNU General Public License for more details.                              */
 /*                                                                            */
 /*  You should have received a copy of the GNU General Public License         */
-/*  along with this program; if not, write to the Free Software               */
-/*  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA */
+/*  along with this program; if not, see <https://www.gnu.org/licenses/>.     */
 /*                                                                            */
 /******************************************************************************/
 
@@ -1687,7 +1686,7 @@ static gboolean bet_array_sort_scheduled_transactions (gint div_number,
  * \return
  **/
 static gboolean bet_array_start_date_focus_out (GtkWidget *entry,
-                        						GdkEventFocus *ev,
+                        						GdkEvent *ev,
                         						gpointer null)
 {
     gint account_number;
@@ -2184,6 +2183,7 @@ static gboolean bet_array_refresh_futur_data (GtkTreeModel *tab_model,
     GHashTableIter iter;
     gpointer key, value;
     gint account_number;
+    gboolean ret_value = TRUE;
 
     /* devel_debug (NULL); */
 
@@ -2191,6 +2191,8 @@ static gboolean bet_array_refresh_futur_data (GtkTreeModel *tab_model,
     future_list = bet_data_future_get_list ();
 	if (g_hash_table_size (future_list) == 0)
 		return FALSE;
+
+    GDate * date_tomorrow = gsb_date_tomorrow ();
 
     g_hash_table_iter_init (&iter, future_list);
     while (g_hash_table_iter_next (&iter, &key, &value))
@@ -2203,7 +2205,6 @@ static gboolean bet_array_refresh_futur_data (GtkTreeModel *tab_model,
         gchar *str_date;
         gchar *str_description;
         gchar *str_amount;
-        GDate *date_tomorrow;
         GsbReal amount;
         gboolean inverse_amount = FALSE;
         gint currency_number;
@@ -2217,18 +2218,18 @@ static gboolean bet_array_refresh_futur_data (GtkTreeModel *tab_model,
                 inverse_amount = TRUE;
         }
 
-        date_tomorrow = gsb_date_tomorrow ();
         if (g_date_compare (scheduled->date, date_tomorrow) < 0)
         {
             bet_data_future_remove_line (account_number, scheduled->number, FALSE);
-            g_hash_table_iter_init (&iter, future_list);
-            g_date_free (date_tomorrow);
             if (g_hash_table_size (future_list) == 0)
-                return FALSE;
+            {
+                ret_value = FALSE;
+                break;
+            }
+
+            g_hash_table_iter_init (&iter, future_list);
             continue;
         }
-        else
-            g_date_free (date_tomorrow);
 
         if (g_date_compare (scheduled->date, date_max) > 0)
             continue;
@@ -2282,7 +2283,9 @@ static gboolean bet_array_refresh_futur_data (GtkTreeModel *tab_model,
         g_free (str_credit);
     }
 
-    return TRUE;
+    g_date_free (date_tomorrow);
+
+    return ret_value;
 }
 
 /**

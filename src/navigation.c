@@ -15,8 +15,7 @@
 /*  GNU General Public License for more details.                              */
 /*                                                                            */
 /*  You should have received a copy of the GNU General Public License         */
-/*  along with this program; if not, write to the Free Software               */
-/*  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA */
+/*  along with this program; if not, see <https://www.gnu.org/licenses/>.     */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -1362,7 +1361,23 @@ gint gsb_gui_navigation_get_current_account (void)
 						-1);
 
 	if (page == GSB_ACCOUNT_PAGE)
-		return account_number;
+	{
+		if (account_number > 0)
+		{
+			return account_number;
+		}
+		else
+		{
+			gchar* tmp_str;
+
+			tmp_str = g_strdup_printf (_("The account number (%d) is < to 0. This is not normal.\n"
+										 "Please contact the Grisbi's team on devel@listes.grisbi.org "
+										 "to find what happened to your current file."),
+									   account_number);
+			dialogue_error (tmp_str);
+			g_free (tmp_str);
+		}
+	}
 
 	return -1;
 }
@@ -1933,6 +1948,9 @@ gboolean gsb_gui_navigation_select_line (GtkTreeSelection *selection,
 			/* show menu InitwidthCol */
 			gsb_menu_gui_sensitive_win_menu_item ("reset-width-col", TRUE);
 
+			/* show menu "Show transaction form" */
+			gsb_menu_gui_sensitive_win_menu_item ("show-form", TRUE);
+
 			/* set last_selected_scheduler option */
 			gsb_scheduler_list_update_tree_view (gsb_scheduler_list_get_tree_view ());
 
@@ -2002,7 +2020,8 @@ gboolean gsb_gui_navigation_select_line (GtkTreeSelection *selection,
 			title = g_strdup(_("Reports"));
 
 			/* show menu SearchAcc */
-			gsb_menu_gui_sensitive_win_menu_item ("search-acc", TRUE);
+			if (! gsb_menu_is_search_ongoing())
+				gsb_menu_gui_sensitive_win_menu_item ("search-acc", TRUE);
 
 			/* what to be done if switch to that page */
 			grisbi_win_set_form_expander_visible (FALSE, FALSE);

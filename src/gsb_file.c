@@ -16,8 +16,7 @@
 /*  GNU General Public License for more details.                              */
 /*                                                                            */
 /*  You should have received a copy of the GNU General Public License         */
-/*  along with this program; if not, write to the Free Software               */
-/*  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA */
+/*  along with this program; if not, see <https://www.gnu.org/licenses/>.     */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -425,6 +424,7 @@ static gint gsb_file_dialog_save (const gchar *filename,
 			gtk_dialog_add_action_widget (GTK_DIALOG (dialog), button_cancel, GTK_RESPONSE_REJECT);
 
 			button_save = gtk_button_new_with_label (_("Save"));
+			gtk_widget_set_can_default(button_save, TRUE);
 			gtk_dialog_add_action_widget (GTK_DIALOG (dialog), button_save, GTK_RESPONSE_OK);
 
 			if (difference >= 120)
@@ -456,6 +456,7 @@ static gint gsb_file_dialog_save (const gchar *filename,
 			gtk_dialog_add_action_widget (GTK_DIALOG (dialog), button_cancel, GTK_RESPONSE_NO);
 
 			button_save = gtk_button_new_with_label (_("Save"));
+			gtk_widget_set_can_default(button_save, TRUE);
 			gtk_dialog_add_action_widget (GTK_DIALOG (dialog), button_save, GTK_RESPONSE_OK);
 
 			message = g_strdup("");

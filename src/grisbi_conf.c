@@ -16,8 +16,7 @@
 /*  GNU General Public License for more details.                              */
 /*                                                                            */
 /*  You should have received a copy of the GNU General Public License         */
-/*  along with this program; if not, write to the Free Software               */
-/*  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA */
+/*  along with this program; if not, see <https://www.gnu.org/licenses/>.     */
 /*                                                                            */
 /* ************************************************************************** */
 #include "config.h"
@@ -479,7 +478,7 @@ gboolean grisbi_conf_load_app_config (void)
 											    	 NULL);
 		if (!a_conf->font_string || strlen (a_conf->font_string) == 0)
 		{
-			a_conf->font_string = g_strdup ("Monospace 10");
+			a_conf->font_string = g_strdup ("Sans 10");
 			a_conf->custom_fonte_listes = FALSE;
 		}
     }
@@ -565,7 +564,7 @@ gboolean grisbi_conf_load_app_config (void)
     else if (g_strcmp0 (tmp_str, "Forced sort by date") == 0)
         a_conf->transactions_list_primary_sorting = PRIMARY_SORT_FORCED_BY_DATE;
     else
-        a_conf->transactions_list_primary_sorting = PRIMARY_SORT_BY_VALUE_DATE_THEN_OPERATION_DATA;
+        a_conf->transactions_list_primary_sorting = PRIMARY_SORT_BY_VALUE_DATE_THEN_OPERATION_DATE;
     g_free (tmp_str);
 
     tmp_str = g_key_file_get_string (config,
@@ -1004,7 +1003,7 @@ gboolean grisbi_conf_save_app_config (void)
         case PRIMARY_SORT_FORCED_BY_DATE:
             tmp_str = "Forced sort by date";
             break;
-        case PRIMARY_SORT_BY_VALUE_DATE_THEN_OPERATION_DATA:
+        case PRIMARY_SORT_BY_VALUE_DATE_THEN_OPERATION_DATE:
         default:
             tmp_str = "default";
 	}

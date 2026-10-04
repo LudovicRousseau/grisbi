@@ -14,8 +14,7 @@
 /*  GNU General Public License for more details.                              */
 /*                                                                            */
 /*  You should have received a copy of the GNU General Public License         */
-/*  along with this program; if not, write to the Free Software               */
-/*  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA */
+/*  along with this program; if not, see <https://www.gnu.org/licenses/>.     */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -300,12 +299,14 @@ static gboolean gsb_file_others_load (gchar *filename,
 		{
 			case 0:
 			/* comes for category */
-			categories_fill_list ();
+				if (categories_get_tree_view ())
+					categories_fill_list ();
 			break;
 
 			case 1:
 			/* comes for budget */
-			budgetary_lines_fill_list ();
+				if (budgetary_lines_get_tree_view ())
+					budgetary_lines_fill_list ();
 			break;
 
 			case 2:

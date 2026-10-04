@@ -106,6 +106,7 @@ install_data([
   'gtk-save-as-16.png',
   'gtk-select-color-24.png',
   'gtk-window-new-16.png',
+  '../src/images/gsb-up-16.png',
   ],
   install_dir : pixmaps_dir)
 

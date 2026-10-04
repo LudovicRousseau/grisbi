@@ -38,13 +38,6 @@ GRIBSI_BUNDLE_PATH=. gtk-mac-bundler MacOS/Grisbi.bundle
 
 ./MacOS/manual_add.sh
 
-CUSTOM_ARGS=""
-if [ "$(uname -m)" = "arm64" ]
-then
-    echo "On ARM CPU"
-    CUSTOM_ARGS+="--add-file CtrlClickOpenMe.command CtrlClickOpenMe.command 325 100"
-fi
-
 (
 cd MacOS
 touch .this-is-the-create-dmg-repo
@@ -56,9 +49,12 @@ touch .this-is-the-create-dmg-repo
 	--icon-size 96 \
 	--app-drop-link 500 250 \
 	--icon "Grisbi.app" 150 250 \
-	$CUSTOM_ARGS \
+	--add-file README.html README.html 325 100 \
 	Grisbi-"$GRISBI_VERSION"-"$ARCH".dmg \
 	dist
 )
 
 rm -r "$BUILD_DIR"
+
+# show the directory
+open MacOS

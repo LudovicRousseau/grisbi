@@ -16,8 +16,7 @@
 /*  GNU General Public License for more details.                              */
 /*                                                                            */
 /*  You should have received a copy of the GNU General Public License         */
-/*  along with this program; if not, write to the Free Software               */
-/*  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA */
+/*  along with this program; if not, see <https://www.gnu.org/licenses/>.     */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -1249,7 +1248,11 @@ gboolean gsb_partial_balance_select_account ( GtkTreeSelection *selection,
 					g_free(tmp_str);
                 }
                 else
-                    gtk_entry_set_text ( GTK_ENTRY ( entry ), g_strdup_printf ( "%d", account_nb ) );
+				{
+					gchar * tmp_str = g_strdup_printf ( "%d", account_nb );
+					gtk_entry_set_text ( GTK_ENTRY ( entry ), tmp_str );
+					g_free(tmp_str);
+				}
             }
             list = list -> next;
         }

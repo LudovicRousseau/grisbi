@@ -16,8 +16,7 @@
 /*  GNU General Public License for more details.                              */
 /*                                                                            */
 /*  You should have received a copy of the GNU General Public License         */
-/*  along with this program; if not, write to the Free Software               */
-/*  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA */
+/*  along with this program; if not, see <https://www.gnu.org/licenses/>.     */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -1441,7 +1440,9 @@ static void gsb_assistant_payees_toggled (GtkCellRendererToggle *cell,
 
     g_object_set_data (G_OBJECT (assistant), "sup_payees", sup_payees);
     label = g_object_get_data (G_OBJECT (assistant), "nbre_tiers_select");
-    gtk_label_set_text (label, g_strdup_printf ("%d", g_slist_length (sup_payees)));
+	gchar * tmp_str = g_strdup_printf ("%d", g_slist_length (sup_payees));
+    gtk_label_set_text (label, tmp_str);
+	g_free(tmp_str);
     fixed ^= 1;
 
     /* set new value */
@@ -1528,7 +1529,9 @@ static void gsb_assistant_payees_clicked (GtkButton *button,
 
     g_object_set_data (G_OBJECT (assistant), "sup_payees", sup_payees);
     label = g_object_get_data (G_OBJECT (assistant), "nbre_tiers_select");
-    gtk_label_set_text (label, g_strdup_printf ("%d", g_slist_length (sup_payees)));
+	gchar * tmp_str = g_strdup_printf ("%d", g_slist_length (sup_payees));
+    gtk_label_set_text (label, tmp_str);
+	g_free(tmp_str);
 
     /* gestion du bouton next */
     if (g_slist_length (sup_payees) == 0)

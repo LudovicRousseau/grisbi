@@ -14,8 +14,7 @@
 /*  GNU General Public License for more details.                              */
 /*                                                                            */
 /*  You should have received a copy of the GNU General Public License         */
-/*  along with this program; if not, write to the Free Software               */
-/*  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA */
+/*  along with this program; if not, see <https://www.gnu.org/licenses/>.     */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -151,6 +150,10 @@ gboolean file_obfuscate_run ( void )
                 gsb_data_account_set_bank_branch_code (account_number, NULL);
                 gsb_data_account_set_bank_account_number (account_number, NULL);
                 gsb_data_account_set_bank_account_key (account_number, NULL);
+
+                GrisbiWinEtat * w_etat = (GrisbiWinEtat *) grisbi_win_get_w_etat ();
+                w_etat->adr_common = NULL;
+                w_etat->adr_secondary = NULL;
             }
 
             if ( gtk_toggle_button_get_active ( GTK_TOGGLE_BUTTON ( button_accounts_names ) ) )
@@ -420,11 +423,17 @@ gboolean file_obfuscate_run ( void )
             filename = g_build_filename ( gsb_dirs_get_default_dir (), "No_name-obfuscated.gsb", NULL);
 
         if ( gsb_file_save_save_file ( filename, FALSE,0 ) )
-            dialogue_hint ( g_strdup_printf ( _("Obfuscated file saved as\n'%s'"), filename ),
-                        _("Obfuscation succeeded") );
+		{
+			gchar * tmp_str = g_strdup_printf ( _("Obfuscated file saved as\n'%s'"), filename );
+			dialogue_hint ( tmp_str, _("Obfuscation succeeded") );
+			g_free(tmp_str);
+		}
         else
-            dialogue_error_hint (g_strdup_printf (_("Grisbi couldn't save the file\n'%s'"), filename ),
-                     _("Obfuscation failed") );
+		{
+			gchar * tmp_str = g_strdup_printf (_("Grisbi couldn't save the file\n'%s'"), filename );
+			dialogue_error_hint ( tmp_str, _("Obfuscation failed") );
+			g_free(tmp_str);
+		}
 
         g_free ( filename );
 		g_free (nom_fichier_comptes);

@@ -19,8 +19,7 @@
 /*     GNU General Public License for more details.                              */
 /*                                                                               */
 /*     You should have received a copy of the GNU General Public License         */
-/*     along with this program; if not, write to the Free Software               */
-/*     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA */
+/*     along with this program; if not, see <https://www.gnu.org/licenses/>.     */
 /*                                                                               */
 /* *******************************************************************************/
 
@@ -358,7 +357,7 @@ static void widget_import_asso_fill_model (GtkListStore *list_store)
 		const gchar *payee_name;
 		gchar *tmp_str1;
 		gchar *tmp_str2;
-		struct ImportPayeeAsso *assoc;
+		ImportPayeeAsso *assoc;
 
 		assoc = list_tmp->data;
 		payee_name = gsb_data_payee_get_name (assoc->payee_number, TRUE);
@@ -555,7 +554,7 @@ static void widget_import_asso_update_assoc (const gchar *rule,
 		list_tmp = gsb_import_associations_get_liste_associations ();
 		while (list_tmp)
 		{
-			struct ImportPayeeAsso *assoc;
+			ImportPayeeAsso *assoc;
 
 			assoc = list_tmp->data;
 			if (assoc->payee_number == payee_number)

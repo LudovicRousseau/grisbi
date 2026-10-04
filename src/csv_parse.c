@@ -15,8 +15,7 @@
 /*  GNU General Public License for more details.                              */
 /*                                                                            */
 /*  You should have received a copy of the GNU General Public License         */
-/*  along with this program; if not, write to the Free Software               */
-/*  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA */
+/*  along with this program; if not, see <https://www.gnu.org/licenses/>.     */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -278,7 +277,7 @@ gboolean csv_import_validate_amount (gchar *string)
  *
  * \return
  **/
-gboolean csv_import_parse_currency (struct ImportTransaction *ope,
+gboolean csv_import_parse_currency (ImportTransaction *ope,
 									gchar *string)
 {
 	gint currency_number;
@@ -298,7 +297,7 @@ gboolean csv_import_parse_currency (struct ImportTransaction *ope,
  *
  * \return
  **/
-gboolean csv_import_parse_date (struct ImportTransaction *ope,
+gboolean csv_import_parse_date (ImportTransaction *ope,
 								gchar *string)
 {
 	g_return_val_if_fail (string, FALSE);
@@ -323,7 +322,7 @@ gboolean csv_import_parse_date (struct ImportTransaction *ope,
  *
  * \return
  **/
-gboolean csv_import_parse_value_date (struct ImportTransaction *ope,
+gboolean csv_import_parse_value_date (ImportTransaction *ope,
 									  gchar *string)
 {
 	g_return_val_if_fail (string, FALSE);
@@ -343,7 +342,7 @@ gboolean csv_import_parse_value_date (struct ImportTransaction *ope,
  *
  * \return
  **/
-gboolean csv_import_parse_payee (struct ImportTransaction *ope,
+gboolean csv_import_parse_payee (ImportTransaction *ope,
 								 gchar *string)
 {
 	g_return_val_if_fail (string, FALSE);
@@ -363,7 +362,7 @@ gboolean csv_import_parse_payee (struct ImportTransaction *ope,
  *
  * \return
  **/
-gboolean csv_import_parse_notes (struct ImportTransaction *ope,
+gboolean csv_import_parse_notes (ImportTransaction *ope,
 								 gchar *string)
 {
 	g_return_val_if_fail (string, FALSE);
@@ -383,7 +382,7 @@ gboolean csv_import_parse_notes (struct ImportTransaction *ope,
  *
  * \return
  **/
-gboolean csv_import_parse_cheque (struct ImportTransaction *ope,
+gboolean csv_import_parse_cheque (ImportTransaction *ope,
 								  gchar *string)
 {
 	g_return_val_if_fail (string, FALSE);
@@ -403,7 +402,7 @@ gboolean csv_import_parse_cheque (struct ImportTransaction *ope,
  *
  * \return
  **/
-gboolean csv_import_parse_category (struct ImportTransaction *ope,
+gboolean csv_import_parse_category (ImportTransaction *ope,
 									gchar *string)
 {
 	g_return_val_if_fail (string, FALSE);
@@ -423,7 +422,7 @@ gboolean csv_import_parse_category (struct ImportTransaction *ope,
  *
  * \return
  **/
-gboolean csv_import_parse_sub_category (struct ImportTransaction *ope,
+gboolean csv_import_parse_sub_category (ImportTransaction *ope,
 										gchar *string)
 {
 	g_return_val_if_fail (string, FALSE);
@@ -444,7 +443,7 @@ gboolean csv_import_parse_sub_category (struct ImportTransaction *ope,
  *
  * \return
  **/
-gboolean csv_import_parse_budget (struct ImportTransaction *ope,
+gboolean csv_import_parse_budget (ImportTransaction *ope,
 								  gchar *string)
 {
 	g_return_val_if_fail (string, FALSE);
@@ -464,7 +463,7 @@ gboolean csv_import_parse_budget (struct ImportTransaction *ope,
  *
  * \return
  **/
-gboolean csv_import_parse_sub_budget (struct ImportTransaction *ope,
+gboolean csv_import_parse_sub_budget (ImportTransaction *ope,
 									  gchar *string)
 {
 	g_return_val_if_fail (string, FALSE);
@@ -484,7 +483,7 @@ gboolean csv_import_parse_sub_budget (struct ImportTransaction *ope,
  *
  * \return
  **/
-gboolean csv_import_parse_balance (struct ImportTransaction *ope,
+gboolean csv_import_parse_balance (ImportTransaction *ope,
 								   gchar *string)
 {
 	if (!string)
@@ -508,7 +507,7 @@ gboolean csv_import_parse_balance (struct ImportTransaction *ope,
  *
  * \return
  **/
-gboolean csv_import_parse_credit (struct ImportTransaction *ope,
+gboolean csv_import_parse_credit (ImportTransaction *ope,
 								  gchar *string)
 {
 	if (!string)
@@ -530,7 +529,7 @@ gboolean csv_import_parse_credit (struct ImportTransaction *ope,
  *
  * \return
  **/
-gboolean csv_import_parse_debit (struct ImportTransaction *ope,
+gboolean csv_import_parse_debit (ImportTransaction *ope,
 								 gchar *string)
 {
 	if (!string)
@@ -552,7 +551,7 @@ gboolean csv_import_parse_debit (struct ImportTransaction *ope,
  *
  * \return
  **/
-gboolean csv_import_parse_p_r (struct ImportTransaction *ope,
+gboolean csv_import_parse_p_r (ImportTransaction *ope,
 							   gchar *string)
 {
 	g_return_val_if_fail (string, FALSE);
@@ -593,7 +592,7 @@ gboolean csv_import_parse_p_r (struct ImportTransaction *ope,
  *
  * \return
  **/
-gboolean csv_import_parse_split (struct ImportTransaction *ope,
+gboolean csv_import_parse_split (ImportTransaction *ope,
 								 gchar *string)
 {
 	g_return_val_if_fail (string, FALSE);
@@ -616,7 +615,7 @@ gboolean csv_import_parse_split (struct ImportTransaction *ope,
  *
  * \return
  **/
-gboolean csv_import_parse_payment_method (struct ImportTransaction *ope,
+gboolean csv_import_parse_payment_method (ImportTransaction *ope,
 										  gchar *string)
 {
 	g_return_val_if_fail (string, FALSE);

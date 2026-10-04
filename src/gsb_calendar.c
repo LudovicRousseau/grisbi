@@ -16,8 +16,7 @@
 /*  GNU General Public License for more details.                              */
 /*                                                                            */
 /*  You should have received a copy of the GNU General Public License         */
-/*  along with this program; if not, write to the Free Software               */
-/*  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA */
+/*  along with this program; if not, see <https://www.gnu.org/licenses/>.     */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -106,9 +105,9 @@ gboolean gsb_calendar_update ( void )
 
     gtk_calendar_clear_marks ( GTK_CALENDAR ( scheduled_calendar ) );
     gtk_calendar_get_date ( GTK_CALENDAR ( scheduled_calendar ),
-                        &calendar_day,
+                        &calendar_year,
                         &calendar_month,
-                        &calendar_year );
+                        &calendar_day );
 
     /* select the current day */
     time ( &temps );
@@ -162,9 +161,9 @@ void click_sur_jour_calendrier_echeance ( GtkWidget *calendrier,
 
     time ( &temps );
     gtk_calendar_get_date ( GTK_CALENDAR ( scheduled_calendar ),
-                        &calendar_day,
+                        &calendar_year,
                         &calendar_month,
-                        &calendar_year );
+                        &calendar_day );
 
     g_signal_handlers_block_by_func ( G_OBJECT ( calendrier ),
 				       G_CALLBACK ( click_sur_jour_calendrier_echeance ),

@@ -16,8 +16,7 @@
 /*  GNU General Public License for more details.                              */
 /*                                                                            */
 /*  You should have received a copy of the GNU General Public License         */
-/*  along with this program; if not, write to the Free Software               */
-/*  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA */
+/*  along with this program; if not, see <https://www.gnu.org/licenses/>.     */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -580,7 +579,7 @@ static void grisbi_prefs_left_tree_view_setup (GrisbiPrefs *prefs,
 
     /* make column */
     cell = gtk_cell_renderer_text_new ();
-    column = gtk_tree_view_column_new_with_attributes ("Categories",
+    column = gtk_tree_view_column_new_with_attributes (_("Categories"),
 													   cell,
 													   "text", LEFT_PANEL_TREE_TEXT_COLUMN,
 													   "weight", LEFT_PANEL_TREE_BOLD_COLUMN,

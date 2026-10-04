@@ -16,8 +16,7 @@
 /*  GNU General Public License for more details.                              */
 /*                                                                            */
 /*  You should have received a copy of the GNU General Public License         */
-/*  along with this program; if not, write to the Free Software               */
-/*  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA */
+/*  along with this program; if not, see <https://www.gnu.org/licenses/>.     */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -133,6 +132,7 @@ static gulong gsb_file_save_account_part (gulong iterator,
 		gchar *owner_str;
 		gchar *bet_str;
 		gchar *tmp_str;
+		gint bank_number;
 		KindAccount kind;
 		GrisbiWinEtat *w_etat;
 
@@ -213,6 +213,11 @@ static gulong gsb_file_save_account_part (gulong iterator,
 				icon_name = g_strdup (account_icon_name);
 		}
 
+		/* fixe bank_number negatif */
+		bank_number = gsb_data_account_get_bank (account_number);
+		if (bank_number < 0)
+			bank_number = 0;
+
 		/* now we can fill the file content */
 		string_to_free1 = g_markup_printf_escaped ("\t<Account\n"
 												   "\t\tName=\"%s\"\n"
@@ -252,7 +257,7 @@ static gulong gsb_file_save_account_part (gulong iterator,
 												   kind,
 												   gsb_data_account_get_currency (account_number),
 												   my_safe_null_str (icon_name),
-												   gsb_data_account_get_bank (account_number),
+												   bank_number,
 												   my_safe_null_str (gsb_data_account_get_bank_branch_code
 																	 (account_number)),
 												   my_safe_null_str (gsb_data_account_get_bank_account_number
@@ -458,7 +463,7 @@ static gulong gsb_file_save_bank_part (gulong iterator,
 
     while (list_tmp)
     {
-		gint bank_number;
+		gint bank_number = 0;
 		gchar *new_string;
 		gchar *adr_str;
 		gchar *rem_str;
@@ -1565,11 +1570,27 @@ static gulong gsb_file_save_transaction_part (gulong iterator,
 		gchar *exchange_fees;
 		gchar *date;
 		gchar *value_date;
+		gint account_number;
 		gint transaction_archive_number;
 		gint floating_point;
 		gint floating_fees;
 
 		transaction_number = gsb_data_transaction_get_transaction_number (list_tmp->data);
+
+		/* bug 2374 test account_number */
+		account_number = gsb_data_transaction_get_account_number (transaction_number);
+		if (account_number <= 0)
+		{
+			/* the transaction will not be exported */
+			gchar* tmp_str;
+
+			tmp_str = g_strdup_printf (_("The account number (%d) is < to 0. This is not normal.\n"
+										 "This transaction will not be exported"),
+									   account_number);
+			dialogue_error (tmp_str);
+			g_free (tmp_str);			list_tmp = list_tmp->next;
+			continue;
+		}
 
 		/* get the archive number for below */
 		transaction_archive_number = gsb_data_transaction_get_archive_number (transaction_number);
@@ -1612,7 +1633,7 @@ static gulong gsb_file_save_transaction_part (gulong iterator,
 											  "Pa=\"%d\" Ca=\"%d\" Sca=\"%d\" Br=\"%d\" No=\"%s\" Pn=\"%d\" "
 											  "Pc=\"%s\" Ma=\"%d\" Ar=\"%d\" Au=\"%d\" Re=\"%d\" Fi=\"%d\" "
 											  "Bu=\"%d\" Sbu=\"%d\" Vo=\"%s\" Ba=\"%s\" Trt=\"%d\" Mo=\"%d\" />\n",
-											  gsb_data_transaction_get_account_number (transaction_number),
+											  account_number,
 											  transaction_number,
 											  my_safe_null_str(gsb_data_transaction_get_transaction_id (transaction_number)),
 											  my_safe_null_str(date),

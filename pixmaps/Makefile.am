@@ -108,7 +108,8 @@ grisbi_pixmaps_DATA = \
 	gtk-save-as-16.png \
 	gtk-save-16.png \
 	gtk-select-color-24.png \
-	gtk-window-new-16.png
+	gtk-window-new-16.png \
+	../src/images/gsb-up-16.png
 
 grisbi_svgiconsdir = $(datadir)/icons/hicolor/scalable/apps
 grisbi_svgicons_DATA = grisbi.svg

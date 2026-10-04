@@ -47,7 +47,7 @@ jobs:
           wget -O /nsis.zip 'https://downloads.sourceforge.net/project/nsis/NSIS 3/3.10/nsis-3.10.zip'
           unzip nsis.zip
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: compile
         run: |
@@ -63,6 +63,6 @@ jobs:
           time /nsis-3.10/makensis.exe builddir/grisbi.nsi
 
       - name: Upload Artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           path: builddir/Grisbi-*.exe

@@ -17,8 +17,7 @@
 /*  GNU General Public License for more details.                              */
 /*                                                                            */
 /*  You should have received a copy of the GNU General Public License         */
-/*  along with this program; if not, write to the Free Software               */
-/*  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA */
+/*  along with this program; if not, see <https://www.gnu.org/licenses/>.     */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -1256,36 +1255,31 @@ gchar *utils_str_remove_accents (const gchar *text)
 }
 
 /**
- *	recherche needle après suppression des accents et mise en majuscule
+ *	recherche needle dans haystack après mise en majuscule
  *
  * \param 	chaine pour la recherche
  * \param	chaine recherchée
  *
- * \return un ptr vers la première occurence
+ * \return TRUE if needle is found in haystack
  **/
-gchar *utils_str_my_case_strstr (const gchar *haystack,
+gboolean utils_str_my_case_strstr (const gchar *haystack,
 								 const gchar *needle)
 {
 	gchar *new_haystack;
 	gchar *new_needle;
-	gchar *str_to_free;
-	gchar *ptr;
+	gboolean ret;
 
 	/* uniformise needle */
-	str_to_free = utils_str_remove_accents (needle);
-	new_needle = g_ascii_strup (str_to_free, -1);
-	g_free (str_to_free);
+	new_needle = g_utf8_strup (needle, -1);
 
-	/* uniformise needle */
-	str_to_free = utils_str_remove_accents (haystack);
-	new_haystack = g_ascii_strup (str_to_free, -1);
-	g_free (str_to_free);
+	/* uniformise haystack */
+	new_haystack = g_utf8_strup (haystack, -1);
 
-	ptr = g_strdup (g_strstr_len (new_haystack, -1, new_needle));
+	ret = NULL != g_strstr_len (new_haystack, -1, new_needle);
 	g_free (new_haystack);
 	g_free (new_needle);
 
-	return ptr;
+	return ret;
 }
 
 /**

@@ -15,8 +15,7 @@
 /*     GNU General Public License for more details. */
 
 /*     You should have received a copy of the GNU General Public License */
-/*     along with this program; if not, write to the Free Software */
-/*     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA */
+/*     along with this program; if not, see <https://www.gnu.org/licenses/>. */
 
 #include "config.h"
 
@@ -33,6 +32,8 @@
 #include "structures.h"
 #include "etats_config.h"
 #include "etats_affiche.h"
+#include "gsb_dirs.h"
+#include "erreur.h"
 /*END_INCLUDE*/
 
 /* FOLLOWING LINES REVERTS BACK TO THE ORIGINAL FPRINTF (LIBINTL_FPRINTF IS BUGGY) */
@@ -42,8 +43,8 @@
 
 /*START_STATIC*/
 static void html_attach_hsep ( int x, int x2, int y, int y2);
-static void html_attach_label ( gchar * text, gdouble properties, int x, int x2, int y, int y2,
-							   GtkJustification align, gint transaction_number );
+static void html_attach_label ( gchar * text, int properties, int x, int x2, int y, int y2,
+							   GtkJustification align, gint transaction_number, const gchar *class );
 static void html_attach_vsep ( int x, int x2, int y, int y2);
 static gint html_finish ( void );
 static gint html_initialise ( GSList * opes_selectionnees, gchar * filename );
@@ -92,17 +93,16 @@ struct EtatAffichage html_affichage = {
  * \param transaction_number the number of a transaction to link to (not used as html
  *            backend is not interactive)
  */
-void html_attach_label ( gchar * text, gdouble properties, int x, int x2, int y, int y2,
-						GtkJustification align, gint transaction_number )
+void html_attach_label ( gchar * text, int properties, int x, int x2, int y, int y2,
+						GtkJustification align, gint transaction_number, const gchar *class )
 {
     int pad, realsize;
     gint current_report_number;
 
     current_report_number = gsb_gui_navigation_get_current_report ();
 
-
     if ( !text )
-	text = (gchar*)"";
+		return;
 
     if ( y >= html_lastline )
     {
@@ -110,16 +110,16 @@ void html_attach_label ( gchar * text, gdouble properties, int x, int x2, int y,
 	html_lastline = y2;
 	if ( ! html_first_line )
 	  {
-	    fprintf ( html_out, "      </tr>\n\n");
+	    fprintf ( html_out, "</tr>\n\n");
 	  }
 	html_first_line = FALSE;
-	fprintf ( html_out, "      <tr>\n");
+	fprintf ( html_out, "<tr>\n");
     }
 
     for ( pad = html_lastcol ; pad < x ; pad ++ )
-	fprintf ( html_out, "        <td></td>\n" );
+	fprintf ( html_out, "<td></td>\n" );
 
-    fprintf ( html_out, "        <td" );
+    fprintf ( html_out, "<td" );
 
     if ( (x2 - x) > 1 )
 	fprintf ( html_out, " colspan=\"%d\"", (x2 - x) );
@@ -135,70 +135,15 @@ void html_attach_label ( gchar * text, gdouble properties, int x, int x2, int y,
 	}
     }
 
-    switch ( align )
-    {
-		case GTK_JUSTIFY_LEFT:
-			fprintf ( html_out, " align=\"left\"" );
-			break;
-
-		case GTK_JUSTIFY_RIGHT:
-			fprintf ( html_out, " align=\"right\"" );
-			break;
-
-		case GTK_JUSTIFY_CENTER:
-			fprintf ( html_out, " align=\"center\"" );
-			break;
-		case GTK_JUSTIFY_FILL:
-			break;
-    }
-
-    fprintf ( html_out, ">&nbsp;" );
-
-    if ( ((int) properties) & TEXT_BOLD )
-    {
-	fprintf ( html_out, "<b>");
-    }
-    if ( ((int) properties) & TEXT_ITALIC )
-    {
-	fprintf ( html_out, "<em>");
-    }
-    if ( ((int) properties) & TEXT_HUGE )
-    {
-	fprintf ( html_out, "<font size=\"+5\">");
-    }
-    if ( ((int) properties) & TEXT_LARGE )
-    {
-	fprintf ( html_out, "<font size=\"+2\">");
-    }
-    if ( ((int) properties) & TEXT_SMALL )
-    {
-	fprintf ( html_out, "<font size=\"-2\">");
-    }
+	if (class)
+	{
+		fprintf ( html_out, " class=\"%s\"", class);
+	}
+	fprintf ( html_out, ">" );
 
     html_safe(text);
 
-    if ( ((int) properties) & TEXT_SMALL )
-    {
-	fprintf ( html_out, "</font>");
-    }
-    if ( ((int) properties) & TEXT_LARGE )
-    {
-	fprintf ( html_out, "</font>");
-    }
-    if ( ((int) properties) & TEXT_HUGE )
-    {
-	fprintf ( html_out, "</font>");
-    }
-    if ( ((int) properties) & TEXT_ITALIC )
-    {
-	fprintf ( html_out, "</em>");
-    }
-    if ( ((int) properties) & TEXT_BOLD )
-    {
-	fprintf ( html_out, "</b>");
-    }
-
-    fprintf ( html_out, "        </td>\n" );
+    fprintf ( html_out, "</td>\n" );
 
     html_last_is_hsep = 0;
     html_lastcol = x2;
@@ -217,26 +162,7 @@ void html_attach_label ( gchar * text, gdouble properties, int x, int x2, int y,
  */
 void html_attach_vsep ( int x, int x2, int y, int y2)
 {
-  int pad;
-
-  if ( y >= html_lastline )
-    {
-      if ( ! html_first_line )
-	{
-	  fprintf ( html_out, "      </tr>\n\n");
-	}
-      fprintf ( html_out, "      <tr>\n");
-      html_lastline = y2;
-    }
-
-  for ( pad = html_lastcol ; pad < x ; pad ++ )
-    fprintf ( html_out, "        <td></td>" );
-
-  fprintf ( html_out, "        <td width=\"1\" bgcolor=\"black\"></td>\n" );
-
-  html_last_is_hsep = 0;
-  html_lastcol = x2;
-  html_first_line = FALSE;
+	return;
 }
 
 
@@ -252,22 +178,7 @@ void html_attach_vsep ( int x, int x2, int y, int y2)
  */
 void html_attach_hsep ( int x, int x2, int y, int y2)
 {
-  if ( ! html_first_line )
-    {
-      fprintf ( html_out, "      </tr>\n\n");
-    }
-
-  fprintf ( html_out,
-	    "      <tr>\n"
-	    "        <td colspan=\"%d\">\n"
-	    "          <hr/>\n"
-	    "        </td>\n",
-	    nb_colonnes );
-
-  html_last_is_hsep = 1;
-  html_lastline = y2;
-  html_lastcol = x2;
-  html_first_line = FALSE;
+	return;
 }
 
 
@@ -289,8 +200,10 @@ gint html_initialise ( GSList * opes_selectionnees, gchar * filename )
     html_out = utils_files_utf8_fopen ( filename, "w" );
     if ( ! html_out )
     {
+      gchar * tmp_str = g_strdup_printf (_("Cannot open file '%s' for writing"), filename);
       dialogue_error_hint ( _("Make sure file exists and is writable."),
-			   g_strdup_printf (_("Cannot open file '%s' for writing"), filename));
+          tmp_str);
+      g_free(tmp_str);
       return FALSE;
     }
 
@@ -300,10 +213,34 @@ gint html_initialise ( GSList * opes_selectionnees, gchar * filename )
 	     "  \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd\">\n\n"
 	     "<html>\n"
 	     "  <head>\n"
-	     "    <meta http-equiv=\"Content-Type\" content=\"text/html; charset=UTF-8\" />\n"
-	     "    <title>");
+		 "    <meta http-equiv=\"Content-Type\" content=\"text/html; charset=UTF-8\" />\n");
 
-    if (!gsb_gui_navigation_get_current_report ())
+	gchar * css_filename = g_build_filename (gsb_dirs_get_ui_dir(), "grisbi_report_default.css", NULL);
+	FILE * fd_css = fopen(css_filename, "r");
+	if (fd_css)
+	{
+		fprintf (html_out, "<style>\n");
+		char buffer[1024];
+		while (! feof(fd_css))
+		{
+			ssize_t s = fread(buffer, 1, sizeof buffer, fd_css);
+			fwrite(buffer, 1, s, html_out);
+		}
+		fclose(fd_css);
+		fprintf (html_out, "</style>");
+	}
+	else
+	{
+		gchar * tmp_str = g_strdup_printf("CSS file not found in %s", css_filename);
+		alert_debug(tmp_str);
+		g_free(tmp_str);
+	}
+
+	fprintf (html_out,
+		 "    <link rel=\"stylesheet\" href=\"grisbi_report_perso.css\" />\n"
+		 "    <title>");
+
+	if (!gsb_gui_navigation_get_current_report ())
 	return FALSE;
 
     html_safe (etats_support_get_titre (gsb_gui_navigation_get_current_report ()));
@@ -311,7 +248,7 @@ gint html_initialise ( GSList * opes_selectionnees, gchar * filename )
 	     "</title>\n"
 	     "  </head>\n\n"
 	     "  <body>\n"
-	     "    <table cellspacing=\"0\" cellpadding=\"0\" border=\"0\">\n\n");
+	     "    <table class=\"table_globale\">\n\n");
 
     return TRUE;
 }
@@ -357,9 +294,7 @@ void html_safe ( gchar * text )
 	{
 
 	    case ' ':
-		if ( start )
-		    fprintf ( html_out, "&nbsp;" );
-		else
+		if ( ! start )
 		    fprintf ( html_out, "%c", *text );
 		break;
 

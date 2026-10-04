@@ -16,8 +16,7 @@
 /*  GNU General Public License for more details.                              */
 /*                                                                            */
 /*  You should have received a copy of the GNU General Public License         */
-/*  along with this program; if not, write to the Free Software               */
-/*  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA */
+/*  along with this program; if not, see <https://www.gnu.org/licenses/>.     */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -105,7 +104,6 @@ gint devise_tiers_etat;
 gint devise_generale_etat;
 
 const gchar *nom_categ_en_cours;
-const gchar *nom_ss_categ_en_cours;
 const gchar *nom_ib_en_cours;
 const gchar *nom_ss_ib_en_cours;
 const gchar *nom_compte_en_cours;
@@ -1421,7 +1419,6 @@ pas_decalage:
 	ligne_debut_partie = -1;
 
 	nom_categ_en_cours = NULL;
-	nom_ss_categ_en_cours = NULL;
 	nom_ib_en_cours = NULL;
 	nom_ss_ib_en_cours = NULL;
 	nom_compte_en_cours = NULL;

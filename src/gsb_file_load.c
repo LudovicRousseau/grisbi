@@ -16,8 +16,7 @@
 /*  GNU General Public License for more details.                              */
 /*                                                                            */
 /*  You should have received a copy of the GNU General Public License         */
-/*  along with this program; if not, write to the Free Software               */
-/*  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA */
+/*  along with this program; if not, see <https://www.gnu.org/licenses/>.     */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -160,6 +159,7 @@ static void gsb_file_load_account_part (const gchar **attribute_names,
     gint i=0;
     gint account_number = 0;
 	gint bet_months = 0;
+	gint new_account_number = 0;
 	gboolean is_loan = FALSE;
 	GDate *date = NULL;
 	LoanStruct *s_loan = NULL;
@@ -199,7 +199,18 @@ static void gsb_file_load_account_part (const gchar **attribute_names,
 
                 else if (!strcmp (attribute_names[i], "Bank"))
                 {
-                    gsb_data_account_set_bank (account_number, utils_str_atoi (attribute_values[i]));
+					gint bank_number;
+
+					bank_number = utils_str_atoi (attribute_values[i]);
+					if (bank_number < 0)
+					{
+						gsb_data_account_set_bank (account_number, 0);
+						gsb_file_set_modified (TRUE);
+					}
+					else
+					{
+						gsb_data_account_set_bank (account_number, bank_number);
+					}
                 }
 
                 else if (!strcmp (attribute_names[i], "Bank_branch_code"))
@@ -380,7 +391,7 @@ static void gsb_file_load_account_part (const gchar **attribute_names,
 				{
 					gsb_data_form_new_organization ();
 					gsb_data_form_set_nb_columns (utils_str_atoi (attribute_values[i]));
-					gsb_file_set_modified (TRUE);
+					//~ gsb_file_set_modified (TRUE);
 				}
 
 				else if (!strcmp (attribute_names[i], "Form_lines_number"))
@@ -486,15 +497,31 @@ static void gsb_file_load_account_part (const gchar **attribute_names,
 
                 else if (!strcmp (attribute_names[i], "Number"))
                 {
-                    account_number = gsb_data_account_set_account_number (account_number,
-																		  utils_str_atoi
-																		  (attribute_values[i]));
-					if (account_number == 0)
-					{
-						GrisbiWinRun *w_run;
+					GrisbiWinRun *w_run;
 
-						w_run = grisbi_win_get_w_run ();
+					w_run = grisbi_win_get_w_run ();
+
+					new_account_number = utils_str_atoi (attribute_values[i]);
+					if (new_account_number > 0)
+						account_number = gsb_data_account_set_account_number (account_number, new_account_number);
+					else if (account_number == 0)
+					{
 						w_run->account_number_is_0 = TRUE;
+					}
+					else
+					{
+						gchar* tmp_str;
+
+						/* save the new account_number */
+						w_run->negative_account_number = account_number;
+						tmp_str = g_strdup_printf (_("The account number (%d) is < to 0. This is not normal.\n"
+													 "Grisbi has just created a new account with the number %d.\n"
+													 "Some transactions may be linked to an account that no longer exists.\n"
+													 "Run the \"Debug account files\" menu."),
+												   new_account_number,
+												   account_number);
+						dialogue_error (tmp_str);
+						g_free (tmp_str);
 					}
                 }
 
@@ -2703,7 +2730,7 @@ static void gsb_file_load_payee_part (const gchar **attribute_names,
 {
     gint i=0;
     gint payee_number;
-	struct ImportPayeeAsso *assoc = NULL;
+	ImportPayeeAsso *assoc = NULL;
 
     if (!attribute_names[i])
     return;
@@ -2748,7 +2775,7 @@ static void gsb_file_load_payee_part (const gchar **attribute_names,
         {
             gsb_data_payee_set_search_string (payee_number, attribute_values[i]);
 			g_free(assoc); /* in case it was already allocated */
-			assoc = g_malloc (sizeof (struct ImportPayeeAsso));
+			assoc = g_malloc (sizeof (ImportPayeeAsso));
 			assoc->payee_number = payee_number;
 			assoc->search_str = g_strdup (attribute_values[i]);
         }
@@ -2884,11 +2911,14 @@ static void gsb_file_load_print_part (const gchar **attribute_names,
 									  const gchar **attribute_values)
 {
     gint i=0;
+	GrisbiWinEtat *w_etat;
 
     if (!attribute_names[i])
     return;
 
-    do
+	w_etat = (GrisbiWinEtat *) grisbi_win_get_w_etat ();
+
+	do
     {
     /*     we test at the beginning if the attribute_value is NULL, if yes, */
     /*        go to the next */
@@ -2951,16 +2981,17 @@ static void gsb_file_load_print_part (const gchar **attribute_names,
 
     else if (!strcmp (attribute_names[i], "Report_font_transactions"))
     {
-        gsb_data_print_config_set_report_font_transaction (pango_font_description_from_string
-														   (attribute_values[i]));
+		w_etat->reports_font_transactions = g_strdup (attribute_values[i]);
+		gsb_data_print_config_set_report_font_transaction (pango_font_description_from_string
+														   (w_etat->reports_font_transactions));
     }
 
     else if (!strcmp (attribute_names[i], "Report_font_title"))
     {
-        gsb_data_print_config_set_report_font_title (pango_font_description_from_string
-													 (attribute_values[i]));
+		w_etat->reports_font_titles = g_strdup (attribute_values[i]);
+		gsb_data_print_config_set_report_font_title (pango_font_description_from_string
+													 (w_etat->reports_font_titles));
     }
-
 
     i++;
     }
@@ -3281,9 +3312,15 @@ static void gsb_file_load_scheduled_transactions_part (const gchar **attribute_n
 
     if (!strcmp (attribute_names[i], "Fi"))
     {
-        gsb_data_scheduled_set_financial_year_number (scheduled_number, utils_str_atoi (attribute_values[i]));
-        i++;
-        continue;
+		gint financial_year = 0;
+
+		/* fixes bug 2374 */
+		financial_year = utils_str_atoi (attribute_values[i]);
+		if (financial_year < 0)
+			financial_year = 0;
+		gsb_data_scheduled_set_financial_year_number (scheduled_number, financial_year);
+		i++;
+		continue;
     }
 
     if (!strcmp (attribute_names[i], "Bu"))
@@ -3414,6 +3451,19 @@ static void gsb_file_load_transactions_part (const gchar **attribute_names,
                 if (!strcmp (attribute_names[i], "Ac"))
                 {
                     account_number = utils_str_atoi (attribute_values[i]);
+					if (account_number <= 0)
+					{
+						/* the transaction will not be imported */
+						gchar* tmp_str;
+
+						tmp_str = g_strdup_printf (_("The account number (%d) is < to 0. This is not normal.\n"
+													 "This transaction will not be imported"),
+												   account_number);
+						dialogue_error (tmp_str);
+						g_free (tmp_str);
+						gsb_file_set_modified (TRUE);
+						return;
+					}
                 }
 
                 else if (!strcmp (attribute_names[i], "Am"))
@@ -3523,8 +3573,13 @@ static void gsb_file_load_transactions_part (const gchar **attribute_names,
             case 'F':
                 if (!strcmp (attribute_names[i], "Fi"))
                 {
-                    gsb_data_transaction_set_financial_year_number (transaction_number,
-																	utils_str_atoi (attribute_values[i]));
+					gint financial_year = 0;
+
+					financial_year = utils_str_atoi (attribute_values[i]);
+					if (financial_year < 0)
+						financial_year = 0;
+
+					gsb_data_transaction_set_financial_year_number (transaction_number, financial_year);
                 }
 
                 else
@@ -3566,9 +3621,9 @@ static void gsb_file_load_transactions_part (const gchar **attribute_names,
 
                 else if (!strcmp (attribute_names[i], "Nb"))
                 {
-                    transaction_number = gsb_data_transaction_new_transaction_with_number (account_number,
-																						   utils_str_atoi
-																						   (attribute_values[i]));
+                    transaction_number = gsb_data_transaction_new_transaction_from_file (account_number,
+																						 utils_str_atoi
+																						 (attribute_values[i]));
                 }
 
                 else
@@ -4081,6 +4136,8 @@ gboolean gsb_file_load_open_file (const gchar *filename)
 		{
 			download_tmp_values.download_ok = FALSE;
 		}
+
+		gsb_data_transaction_reverse_lists ();
 
 		g_markup_parse_context_free (context);
 		g_free (markup_parser);

@@ -17,8 +17,7 @@
 /*  GNU General Public License for more details.                              */
 /*                                                                            */
 /*  You should have received a copy of the GNU General Public License         */
-/*  along with this program; if not, write to the Free Software               */
-/*  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA */
+/*  along with this program; if not, see <https://www.gnu.org/licenses/>.     */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -159,6 +158,7 @@ static void utils_prefs_fonts_update_labels (GtkWidget *button,
 
 		data = utils_prefs_fonts_get_css_data_for_font (font_name);
 		gtk_css_provider_load_from_data (css_provider, data, -1, NULL);
+/* GTK4: gtk_css_provider_load_from_string (css_provider, data); */
 		context = gtk_widget_get_style_context (font_name_label);
 		gtk_style_context_add_provider (context, GTK_STYLE_PROVIDER (css_provider), GTK_STYLE_PROVIDER_PRIORITY_USER);
 		g_free (data);
@@ -167,7 +167,7 @@ static void utils_prefs_fonts_update_labels (GtkWidget *button,
     {
 		GrisbiAppConf *a_conf;
 
-		font_name = my_strdup ("Monospace");
+		font_name = my_strdup ("Sans");
 		font_size = g_strdup ("10");
 		a_conf = (GrisbiAppConf *) grisbi_app_get_a_conf ();
 		a_conf->custom_fonte_listes = FALSE;
@@ -648,6 +648,7 @@ void utils_prefs_spinbutton_changed (GtkSpinButton *spinbutton,
  * \return a GtkButton
  * */
 GtkWidget *utils_prefs_fonts_create_button (gchar **fontname,
+											gboolean settings,
 											GCallback hook,
 											gpointer data)
 {
@@ -667,11 +668,13 @@ GtkWidget *utils_prefs_fonts_create_button (gchar **fontname,
     gtk_container_add (GTK_CONTAINER(font_button), hbox_font);
 
     font_name_label = gtk_label_new (NULL);
-	gtk_widget_set_name (font_name_label, "label_gsetting_option");
+	if (settings)
+		gtk_widget_set_name (font_name_label, "label_gsetting_option");
     gtk_box_pack_start (GTK_BOX (hbox_font), font_name_label, TRUE, TRUE, 5);
 
     font_size_label = gtk_label_new (NULL);
-	gtk_widget_set_name (font_size_label, "label_gsetting_option");
+	if (settings)
+		gtk_widget_set_name (font_size_label, "label_gsetting_option");
     gtk_box_pack_start (GTK_BOX (hbox_font), font_size_label, FALSE, FALSE, 5);
     g_object_set_data (G_OBJECT (font_button), "hook", hook);
     g_object_set_data (G_OBJECT (font_button), "data", data);

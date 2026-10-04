@@ -16,8 +16,7 @@
 /*  GNU General Public License for more details.                              */
 /*                                                                            */
 /*  You should have received a copy of the GNU General Public License         */
-/*  along with this program; if not, write to the Free Software               */
-/*  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA */
+/*  along with this program; if not, see <https://www.gnu.org/licenses/>.     */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -187,6 +186,14 @@ void init_variables (void)
     w_etat->affichage_echeances_perso_nb_libre = 0;
     w_etat->affichage_echeances_perso_j_m_a = PERIODICITY_DAYS;
 
+    /* variables generales */
+    g_free (w_etat->accounting_entity);
+    w_etat->accounting_entity = NULL;
+    g_free (w_etat->adr_common);
+    w_etat->adr_common = NULL;
+    g_free (w_etat->adr_secondary);
+    w_etat->adr_secondary = NULL;
+
 	/* raz variables of etat */
     if (w_etat->name_logo && strlen (w_etat->name_logo))
         g_free (w_etat->name_logo);
@@ -319,6 +326,12 @@ void free_variables (void)
 
 	/* free account list */
 	gsb_data_account_init_variables ();
+
+	/* free the fonts */
+	if (w_etat->reports_font_titles)
+		g_free (w_etat->reports_font_titles);
+	if (w_etat->reports_font_transactions)
+		g_free (w_etat->reports_font_transactions);
 
 	/* free the form */
     gsb_form_widget_free_list_without_widgets ();

@@ -16,8 +16,7 @@
 /*  GNU General Public License for more details.                              */
 /*                                                                            */
 /*  You should have received a copy of the GNU General Public License         */
-/*  along with this program; if not, write to the Free Software               */
-/*  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA */
+/*  along with this program; if not, see <https://www.gnu.org/licenses/>.     */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -118,13 +117,22 @@ static const gchar *labels_titres_colonnes_liste_ope[] = {	/* names of the data 
     N_("Reconciliation reference"),
     N_("Financial year"),
     N_("Category"),
-    N_("C/R"),
+    N_("P/R"),
     N_("Voucher"),
     N_("Notes"),
     N_("Bank references"),
     N_("Transaction number"),
     N_("Cheque number"),
     NULL };
+
+static const gchar * const search_type_labels[] = {
+	N_("Payee name"),
+	N_("Note"),
+	N_("Payee and note"),
+	N_("Budgetary line"),
+	N_("Category"),
+	NULL
+};
 /*END_STATIC*/
 
 /*START_GLOBAL*/
@@ -140,8 +148,284 @@ GSList *orphan_child_transactions = NULL;
 /*END_EXTERN*/
 
 /******************************************************************************/
+/* Search bar (toolbar) state                                                 */
+/******************************************************************************/
+static GtkWidget *transactions_search_entry = NULL;
+static GtkWidget *transactions_search_combo = NULL;
+
+typedef enum
+{
+	TRANSACTIONS_SEARCH_PAYEE = 1,
+	TRANSACTIONS_SEARCH_NOTE = 2,
+	TRANSACTIONS_SEARCH_PAYEE_AND_NOTE = 3,
+	TRANSACTIONS_SEARCH_BUDGETARY_LINE = 4,
+	TRANSACTIONS_SEARCH_CATEGORY = 5
+} TransactionsSearchType;
+
+static TransactionsSearchType transactions_search_type = TRANSACTIONS_SEARCH_PAYEE_AND_NOTE;
+#define TRANSACTIONS_SEARCH_MIN_CHARS 3
+
+static void gsb_transactions_list_update_search_filter (void);
+static gboolean gsb_transactions_list_transaction_match_search (gint transaction_number);
+static void transactions_search_set_entry_state (const gchar *state);
+static gint transactions_search_count_matches (gint account_number);
+static void transactions_search_entry_icon_released (GtkEntry *entry,
+													 GtkEntryIconPosition icon_pos,
+													 GdkEvent *event,
+													 gpointer user_data);
+
+/******************************************************************************/
 /* Private functions                                                          */
 /******************************************************************************/
+static void transactions_search_entry_changed (GtkEditable *editable, gpointer user_data)
+{
+	const gchar *text;
+
+	(void) user_data;
+	text = gtk_entry_get_text (GTK_ENTRY (editable));
+	/* keep focus on the entry while editing */
+	gtk_widget_grab_focus (GTK_WIDGET (editable));
+
+	/* show/hide the clear icon depending on content */
+	if (text && *text)
+	{
+		gtk_entry_set_icon_from_icon_name (GTK_ENTRY (editable), GTK_ENTRY_ICON_SECONDARY, "edit-clear");
+		gtk_entry_set_icon_tooltip_text (GTK_ENTRY (editable), GTK_ENTRY_ICON_SECONDARY, _("Clear"));
+		gtk_entry_set_icon_sensitive (GTK_ENTRY (editable), GTK_ENTRY_ICON_SECONDARY, TRUE);
+	}
+	else
+	{
+		gtk_entry_set_icon_from_icon_name (GTK_ENTRY (editable), GTK_ENTRY_ICON_SECONDARY, NULL);
+		gtk_entry_set_icon_sensitive (GTK_ENTRY (editable), GTK_ENTRY_ICON_SECONDARY, FALSE);
+	}
+	gsb_transactions_list_update_search_filter ();
+}
+
+static void transactions_search_combo_changed (GtkComboBox *cb, gpointer user_data)
+{
+	gint idx;
+	(void) user_data;
+	idx = gtk_combo_box_get_active (cb);
+	transactions_search_type = (TransactionsSearchType) (idx + 1); /* 1..6 */
+	gsb_transactions_list_update_search_filter ();
+	/* return focus to the entry after changing selector */
+	if (transactions_search_entry)
+		gtk_widget_grab_focus (transactions_search_entry);
+}
+
+static void transactions_search_reset_clicked (GtkToolButton *btn, gpointer user_data)
+{
+	(void) btn;
+	(void) user_data;
+	if (transactions_search_entry)
+		gtk_entry_set_text (GTK_ENTRY (transactions_search_entry), "");
+	transactions_search_type = TRANSACTIONS_SEARCH_PAYEE_AND_NOTE;
+	if (transactions_search_combo)
+		gtk_combo_box_set_active (GTK_COMBO_BOX (transactions_search_combo), 2);
+	gsb_transactions_list_update_search_filter ();
+	/* restore focus to entry */
+	if (transactions_search_entry)
+		gtk_widget_grab_focus (transactions_search_entry);
+}
+
+static void transactions_search_entry_icon_released (GtkEntry *entry,
+													GtkEntryIconPosition icon_pos,
+													GdkEvent *event,
+													gpointer user_data)
+{
+	(void) event;
+	(void) user_data;
+	if (icon_pos != GTK_ENTRY_ICON_SECONDARY)
+		return;
+
+	/* Reuse existing reset logic */
+	transactions_search_reset_clicked (NULL, NULL);
+	/* Keep focus */
+	gtk_widget_grab_focus (GTK_WIDGET (entry));
+}
+
+static void gsb_transactions_list_update_search_filter (void)
+{
+	gint account_number;
+	glong len = 0;
+	gint matches = 0;
+	const gchar *text = NULL;
+
+	account_number = gsb_gui_navigation_get_current_account ();
+
+	if (transactions_search_entry)
+		text = gtk_entry_get_text (GTK_ENTRY (transactions_search_entry));
+	if (text)
+		len = g_utf8_strlen (text, -1);
+
+	/* no external reset button; clear icon lives inside the entry */
+
+	/* visual state of the entry */
+	if (!text || len == 0)
+	{
+		transactions_search_set_entry_state ("neutral");
+	}
+	else if (len < TRANSACTIONS_SEARCH_MIN_CHARS)
+	{
+		transactions_search_set_entry_state ("too_short");
+	}
+	else
+	{
+		matches = transactions_search_count_matches (account_number);
+		if (matches > 0)
+			transactions_search_set_entry_state ("match");
+		else
+			transactions_search_set_entry_state ("no_match");
+	}
+
+	gsb_transactions_list_update_tree_view (account_number, FALSE);
+	/* ensure focus remains on the search entry after refresh */
+	if (transactions_search_entry)
+		gtk_widget_grab_focus (transactions_search_entry);
+}
+
+static void transactions_search_set_entry_state (const gchar *state)
+{
+	GtkStyleContext *context;
+
+	if (!transactions_search_entry)
+		return;
+
+	context = gtk_widget_get_style_context (transactions_search_entry);
+	gtk_style_context_remove_class (context, "transactions-search-too-short");
+	gtk_style_context_remove_class (context, "transactions-search-no-match");
+	gtk_style_context_remove_class (context, "transactions-search-match");
+
+	if (state && strcmp (state, "too_short") == 0)
+		gtk_style_context_add_class (context, "transactions-search-too-short");
+	else if (state && strcmp (state, "no_match") == 0)
+		gtk_style_context_add_class (context, "transactions-search-no-match");
+	else if (state && strcmp (state, "match") == 0)
+		gtk_style_context_add_class (context, "transactions-search-match");
+}
+
+static gint transactions_search_count_matches (gint account_number)
+{
+	GSList *tmp_list;
+	gint count = 0;
+	gboolean r_shown;
+
+	if (account_number <= 0)
+		return 0;
+
+	r_shown = gsb_data_account_get_r (account_number);
+
+	/* never search in archives: use the non-archived list */
+	tmp_list = gsb_data_transaction_get_transactions_list ();
+	while (tmp_list)
+	{
+		TransactionStruct *transaction;
+		gint transaction_number;
+
+		transaction = tmp_list->data;
+		transaction_number = gsb_data_transaction_get_transaction_number (transaction);
+
+		if (transaction_number > 0
+			&& gsb_data_transaction_get_account_number (transaction_number) == account_number)
+		{
+			/* respect "hide reconciled" setting */
+			if (gsb_data_transaction_get_marked_transaction (transaction_number) == OPERATION_RAPPROCHEE
+				&& !r_shown)
+			{
+				tmp_list = tmp_list->next;
+				continue;
+			}
+
+			if (gsb_transactions_list_transaction_match_search (transaction_number))
+				count++;
+		}
+
+		tmp_list = tmp_list->next;
+	}
+
+	return count;
+}
+
+static gboolean gsb_transactions_list_transaction_match_search (gint transaction_number)
+{
+	const gchar *needle;
+	gboolean match = FALSE;
+
+	/* get the current query from the entry to avoid any desync */
+	if (!transactions_search_entry)
+		return TRUE;
+
+	needle = gtk_entry_get_text (GTK_ENTRY (transactions_search_entry));
+	if (!needle)
+		return TRUE;
+	if (g_utf8_strlen (needle, -1) < TRANSACTIONS_SEARCH_MIN_CHARS)
+		return TRUE;
+
+	switch (transactions_search_type)
+	{
+		case TRANSACTIONS_SEARCH_PAYEE:
+		{
+			const gchar *payee_name;
+			if (gsb_data_transaction_get_mother_transaction_number (transaction_number))
+				return FALSE;
+			payee_name = gsb_data_payee_get_name (gsb_data_transaction_get_payee_number (transaction_number), TRUE);
+			if (payee_name && utils_str_my_case_strstr (payee_name, needle))
+				match = TRUE;
+			break;
+		}
+		case TRANSACTIONS_SEARCH_NOTE:
+		{
+			const gchar *note = gsb_data_transaction_get_notes (transaction_number);
+			if (note && utils_str_my_case_strstr (note, needle))
+				match = TRUE;
+			break;
+		}
+		case TRANSACTIONS_SEARCH_PAYEE_AND_NOTE:
+		{
+			const gchar *note = gsb_data_transaction_get_notes (transaction_number);
+			if (note && utils_str_my_case_strstr (note, needle))
+			{
+				match = TRUE;
+				break;
+			}
+			if (!gsb_data_transaction_get_mother_transaction_number (transaction_number))
+			{
+				const gchar *payee_name = gsb_data_payee_get_name (gsb_data_transaction_get_payee_number (transaction_number), TRUE);
+				if (payee_name && utils_str_my_case_strstr (payee_name, needle))
+					match = TRUE;
+			}
+			break;
+		}
+		case TRANSACTIONS_SEARCH_BUDGETARY_LINE:
+		{
+			gint b = gsb_data_transaction_get_budgetary_number (transaction_number);
+			gint sb = gsb_data_transaction_get_sub_budgetary_number (transaction_number);
+			gchar *name = gsb_data_budget_get_name (b, sb, NULL);
+			if (name)
+			{
+				if (utils_str_my_case_strstr (name, needle))
+					match = TRUE;
+				g_free (name);
+			}
+			break;
+		}
+		case TRANSACTIONS_SEARCH_CATEGORY:
+		{
+			gchar *name = gsb_data_transaction_get_category_real_name (transaction_number);
+			if (name)
+			{
+				if (utils_str_my_case_strstr (name, needle))
+					match = TRUE;
+				g_free (name);
+			}
+			break;
+		}
+		default:
+			match = TRUE;
+	}
+
+	return match;
+}
 /**
  *  Check that a transaction is selected
  *
@@ -1227,7 +1511,7 @@ static gint gsb_transactions_list_choose_reconcile (gint account_number,
                 date_debut = gsb_parse_date_string (init_date);
                 date_fin = gsb_parse_date_string (final_date);
                 date = gsb_data_transaction_get_date (transaction_number);
-                if (g_date_compare (date, date_debut) >= 0
+                if (date_debut && g_date_compare (date, date_debut) >= 0
 					&&
 					g_date_compare (date, date_fin) <= 0)
                 {
@@ -1237,7 +1521,8 @@ static gint gsb_transactions_list_choose_reconcile (gint account_number,
 
                     gtk_tree_path_free (path);
                 }
-                g_date_free (date_debut);
+                if (date_debut)
+                    g_date_free (date_debut);
                 g_date_free (date_fin);
             }
             else if (tmp_reconcile_number == reconcile_number)
@@ -1247,7 +1532,8 @@ static gint gsb_transactions_list_choose_reconcile (gint account_number,
                 gtk_tree_view_scroll_to_cell (GTK_TREE_VIEW (tree_view), path, NULL, FALSE, 0.0, 0.0);
             }
 
-            g_free (init_date);
+            if (init_date)
+                g_free (init_date);
             g_free (final_date);
 
         }
@@ -2583,6 +2869,49 @@ static GtkWidget *gsb_transactions_list_new_toolbar (void)
 
     gtk_toolbar_insert (GTK_TOOLBAR (toolbar), separator, -1);
 
+    /* search entry (right side) */
+    {
+        GtkToolItem *search_item;
+        GtkWidget *entry;
+
+        search_item = gtk_tool_item_new ();
+        entry = gtk_entry_new ();
+        gtk_entry_set_placeholder_text (GTK_ENTRY (entry), _("Search"));
+        gtk_entry_set_width_chars (GTK_ENTRY (entry), 30);
+        gtk_widget_set_size_request (entry, 260, -1);
+        gtk_widget_set_tooltip_text (entry, _("Type at least 3 characters to filter"));
+		g_signal_connect (G_OBJECT (entry),
+						  "icon-release",
+						  G_CALLBACK (transactions_search_entry_icon_released),
+						  NULL);
+        g_signal_connect (G_OBJECT (entry),
+                          "changed",
+                          G_CALLBACK (transactions_search_entry_changed),
+                          NULL);
+        gtk_container_add (GTK_CONTAINER (search_item), entry);
+        gtk_toolbar_insert (GTK_TOOLBAR (toolbar), search_item, -1);
+        transactions_search_entry = entry;
+    }
+
+    /* search selector */
+    {
+        GtkToolItem *combo_item;
+        GtkWidget *combo;
+        combo_item = gtk_tool_item_new ();
+        combo = gtk_combo_box_text_new ();
+		/* mapping kept in the insertion order (see TransactionsSearchType) */
+		for (gint i = 0; search_type_labels[i]; i++)
+			gtk_combo_box_text_append_text (GTK_COMBO_BOX_TEXT (combo), _(search_type_labels[i]));
+        gtk_combo_box_set_active (GTK_COMBO_BOX (combo), 2); /* default to Payee and note */
+        g_signal_connect (G_OBJECT (combo),
+                          "changed",
+                          G_CALLBACK (transactions_search_combo_changed),
+                          NULL);
+        gtk_container_add (GTK_CONTAINER (combo_item), combo);
+        gtk_toolbar_insert (GTK_TOOLBAR (toolbar), combo_item, -1);
+        transactions_search_combo = combo;
+    }
+
     /* archive button */
     item = utils_buttons_tool_button_new_from_image_label ("gsb-archive-24.png", _("Recreates archive"));
     gtk_widget_set_tooltip_text (GTK_WIDGET (item),
@@ -2726,35 +3055,41 @@ GtkWidget *gsb_transactions_list_get_tree_view (void)
 void gsb_transactions_list_update_tree_view (gint account_number,
 											 gboolean keep_selected_transaction)
 {
-    gint selected_transaction = 0;
+	gint selected_transaction = 0;
 	GrisbiAppConf *a_conf;
 
-	/* called sometimes with gsb_gui_navigation_get_current_account, so check we are
-     * on an account */
+	/* called sometimes with gsb_gui_navigation_get_current_account, so check we are on an account */
 	if (account_number <= 0)
 		return;
 
 	a_conf = (GrisbiAppConf *) grisbi_app_get_a_conf ();
+
+	/* on sauvegarde la transaction selectionnee pour plus tard */
 	if (keep_selected_transaction)
+	{
 		selected_transaction = transaction_list_select_get ();
+	}
 
 	/* Fix bug 2172 */
 	//~ if (transaction_list_filter (account_number))
 	//~ {
 		transaction_list_filter (account_number);
 	//~ }
-    transaction_list_set_balances ();
-    transaction_list_sort ();
-    transaction_list_colorize ();
-    if (a_conf->show_transaction_gives_balance)
+	transaction_list_set_balances ();
+	transaction_list_sort ();
+	transaction_list_colorize ();
+	if (a_conf->show_transaction_gives_balance)
+	{
 		transaction_list_set_color_jour (account_number);
+	}
+
 	if (keep_selected_transaction)
 	{
-        transaction_list_select (selected_transaction);
+		transaction_list_select (selected_transaction);
 	}
-    else
+	else
 	{
-        transaction_list_select (-1);
+		transaction_list_select (-1);
 	}
 }
 
@@ -2770,6 +3105,7 @@ GtkWidget *gsb_transactions_list_creation_fenetre_operations (void)
 
     GtkWidget *win_operations;
     GtkWidget *frame;
+    GtkWidget *toolbar_box;
 	GtkWidget *vbox_transactions_list = NULL; /* adr de la vbox qui contient les opés de chaque compte */
 
     /* la fenetre des opé est une vbox : la barre d'outils en haut et la liste en bas */
@@ -2779,9 +3115,13 @@ GtkWidget *gsb_transactions_list_creation_fenetre_operations (void)
     frame = gtk_frame_new (NULL);
     gtk_box_pack_start (GTK_BOX (win_operations), frame, FALSE, FALSE, 0);
 
+    /* vbox inside the frame: toolbar + search info label */
+    toolbar_box = gtk_box_new (GTK_ORIENTATION_VERTICAL, 2);
+    gtk_container_add (GTK_CONTAINER (frame), toolbar_box);
+
     /* création de la barre d'outils */
     transaction_toolbar = gsb_transactions_list_new_toolbar ();
-    gtk_container_add (GTK_CONTAINER (frame), transaction_toolbar);
+    gtk_box_pack_start (GTK_BOX (toolbar_box), transaction_toolbar, FALSE, FALSE, 0);
 
     /* vbox_transactions_list will contain the tree_view, we will see later to set it directly */
     vbox_transactions_list = gtk_box_new (GTK_ORIENTATION_VERTICAL, 0);
@@ -3147,7 +3487,7 @@ gboolean gsb_transactions_list_update_transaction (gint transaction_number)
     transaction_list_update_transaction (transaction_number);
 
     /* update the balances */
-    transaction_list_set_balances ();
+    //~ transaction_list_set_balances (); /* TEST pour detection effets de bord */
 
     account_number = gsb_data_transaction_get_account_number (transaction_number);
     gsb_data_account_colorize_current_balance (account_number);
@@ -4110,45 +4450,52 @@ gboolean gsb_transactions_list_transaction_visible (gpointer transaction_ptr,
 													gint line_in_transaction,
 													gint what_is_line)
 {
-    gint transaction_number;
-    gint r_shown;
-    gint nb_rows;
+	gint transaction_number;
+	gint r_shown;
+	gint nb_rows;
 
-    r_shown = gsb_data_account_get_r (account_number);
-    nb_rows = gsb_data_account_get_nb_rows (account_number);
+	r_shown = gsb_data_account_get_r (account_number);
+	nb_rows = gsb_data_account_get_nb_rows (account_number);
 
-    /* first check if it's an archive, if yes and good account, always show it */
-    if (what_is_line == IS_ARCHIVE)
-    {
-        if (gsb_data_account_get_l (account_number))
-	        return (gsb_data_archive_store_get_account_number (
-                        gsb_data_archive_store_get_number (transaction_ptr)) == account_number);
-        else
-            return FALSE;
-    }
+	/* first check if it's an archive, if yes and good account, always show it */
+	if (what_is_line == IS_ARCHIVE)
+	{
+		if (gsb_data_account_get_l (account_number))
+		{
+			gint tmp_account_number;
 
-    /* we don't check now for the separator, because it won't be shown if the transaction
-     * is not shown, so check the basics for the transaction, and show or not after the separator */
+			tmp_account_number = gsb_data_archive_store_get_account_number (gsb_data_archive_store_get_number (transaction_ptr));
+			if (tmp_account_number == account_number)
+				return TRUE;
+			else
+				return FALSE;
+		}
+	}
 
-    /*  check now for transactions */
-    transaction_number = gsb_data_transaction_get_transaction_number (transaction_ptr);
+	/* we don't check now for the separator, because it won't be shown if the transaction
+	 * is not shown, so check the basics for the transaction, and show or not after the separator */
 
-    /* check the general white line (one for all the list, so no account number) */
-    if (transaction_number == -1)
-	    return (transaction_list_check_line_is_visible (line_in_transaction, nb_rows));
+	/*  check now for transactions */
+	transaction_number = gsb_data_transaction_get_transaction_number (transaction_ptr);
 
-    /* check the account */
-    if (gsb_data_transaction_get_account_number (transaction_number) != account_number)
-	return FALSE;
+	/* check the general white line (one for all the list, so no account number) */
+	if (transaction_number == -1)
+		return (transaction_list_check_line_is_visible (line_in_transaction, nb_rows));
 
-    /* 	    check if it's R and if r is shown */
-    if (gsb_data_transaction_get_marked_transaction (transaction_number) == OPERATION_RAPPROCHEE
-	 &&
-	 !r_shown)
-	return FALSE;
+	/* check the account */
+	if (gsb_data_transaction_get_account_number (transaction_number) != account_number)
+		return FALSE;
 
-    /* 	    now we check if we show 1, 2, 3 or 4 lines */
-    return transaction_list_check_line_is_visible (line_in_transaction, nb_rows);
+	/* 		check if it's R and if r is shown */
+	if (gsb_data_transaction_get_marked_transaction (transaction_number) == OPERATION_RAPPROCHEE && !r_shown)
+		return FALSE;
+
+	/* search filter: only apply when query length >= min chars */
+	if (!gsb_transactions_list_transaction_match_search (transaction_number))
+		return FALSE;
+
+	/* now we check if we show 1, 2, 3 or 4 lines */
+	return transaction_list_check_line_is_visible (line_in_transaction, nb_rows);
 }
 
 /**
@@ -4462,6 +4809,10 @@ gboolean gsb_transactions_list_change_aspect_liste (gint demande)
         case 3 :
         case 4 :
             gsb_transactions_list_set_visible_rows_number (demande);
+
+            /* update menu */
+            gint account_number = gsb_gui_navigation_get_current_account ();
+            gsb_menu_update_view_menu (account_number);
             break;
 
         case 5 :

@@ -117,6 +117,8 @@ gboolean 		gsb_data_account_init_variables							(void);
 gboolean 		gsb_data_account_move_account 							(gint account_number,
 																		 gint dest_account_number);
 gint 			gsb_data_account_new 									(KindAccount account_kind);
+void			gsb_data_account_renum_non_existent_account				(gint account_number,
+																		 gint new_account_number);
 gboolean		gsb_data_account_renum_account_number_0					(const gchar *filename);
 gboolean 		gsb_data_account_reorder 								(GSList *new_order);
 gboolean 		gsb_data_account_set_account_icon_pixbuf 				(gint account_number,
@@ -199,6 +201,9 @@ gboolean 		gsb_data_account_set_kind 								(gint account_number,
 																		 KindAccount account_kind);
 gboolean 		gsb_data_account_set_l 									(gint account_number,
 																		 gboolean show_l);
+void			gsb_data_account_set_marked_balance_from_transaction	(gint account_number,
+																		 gint transaction_number,
+																		 gint sens);
 gboolean 		gsb_data_account_set_mini_balance_authorized 			(gint account_number,
 																		 GsbReal balance);
 gboolean 		gsb_data_account_set_mini_balance_authorized_message 	(gint account_number,

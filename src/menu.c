@@ -16,8 +16,7 @@
 /*  GNU General Public License for more details.                              */
 /*                                                                            */
 /*  You should have received a copy of the GNU General Public License         */
-/*  along with this program; if not, write to the Free Software               */
-/*  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA */
+/*  along with this program; if not, see <https://www.gnu.org/licenses/>.     */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -63,6 +62,7 @@
 /*END_INCLUDE*/
 
 /*START_STATIC*/
+static gboolean Gsb_search_is_ongoing = FALSE;
 /*END_STATIC*/
 
 /*START_EXTERN*/
@@ -824,6 +824,10 @@ void grisbi_cmd_search_acc (GSimpleAction *action,
 	gint transaction_number;
 
 	devel_debug (NULL);
+
+	/* disable a new/duplicate search */
+	gsb_menu_set_search_ongoing(TRUE);
+
 	page_number = gsb_gui_navigation_get_current_page ();
 	switch (page_number)
 	{
@@ -831,10 +835,12 @@ void grisbi_cmd_search_acc (GSimpleAction *action,
 			account_number = gsb_gui_navigation_get_current_account ();
 			transaction_number = gsb_data_account_get_current_transaction_number (account_number);
 			gsb_transactions_list_search (NULL, GINT_TO_POINTER (transaction_number));
+			gsb_menu_set_search_ongoing(FALSE);
 		break;
 
 		case GSB_REPORTS_PAGE:
 			etats_onglet_create_search_report ();
+			gsb_menu_set_search_ongoing(FALSE);
 		break;
 
 		case GSB_CATEGORIES_PAGE:
@@ -1247,6 +1253,7 @@ void gsb_menu_set_menus_view_account_sensitive (gboolean sensitive)
         "show-archived",
         "show-ope",
         "reset-width-col",
+        "new-ope",
         NULL
     };
     const gchar **tmp = items;
@@ -1256,6 +1263,35 @@ void gsb_menu_set_menus_view_account_sensitive (gboolean sensitive)
         gsb_menu_gui_sensitive_win_menu_item (*tmp, sensitive);
         tmp++;
     }
+}
+
+/**
+ * Tell if search dialog is ongoing or not
+ *
+ * \param
+ *
+ * \return TRUE if a search is running
+ * */
+gboolean gsb_menu_is_search_ongoing(void)
+{
+	return Gsb_search_is_ongoing;
+}
+
+/**
+ * Set the search state
+ *
+ * \param status
+ *
+ * */
+void gsb_menu_set_search_ongoing(gboolean status)
+{
+	Gsb_search_is_ongoing = status;
+	if (status)
+		/* search is runing. Disable search */
+		gsb_menu_gui_sensitive_win_menu_item ("search-acc", FALSE);
+	else
+		/* re-enable for a new search */
+		gsb_menu_gui_sensitive_win_menu_item ("search-acc", TRUE);
 }
 
 /**

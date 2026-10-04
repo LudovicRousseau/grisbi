@@ -19,8 +19,7 @@
 /*     GNU General Public License for more details.                              */
 /*                                                                               */
 /*     You should have received a copy of the GNU General Public License         */
-/*     along with this program; if not, write to the Free Software               */
-/*     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA */
+/*     along with this program; if not, see <https://www.gnu.org/licenses/>.     */
 /*                                                                               */
 /* *******************************************************************************/
 
@@ -151,43 +150,28 @@ static gboolean prefs_page_options_ope_display_sort_changed (GtkComboBox *widget
     value = gtk_combo_box_get_active (widget);
     sort_type = GPOINTER_TO_INT (pointeur);
 
-    switch (sort_type)
+	/* On force le tri secondaire si on choisit PRIMARY_SORT_BY_VALUE_DATE_THEN_OPERATION_DATE */
+    if (sort_type == PRIMARY_SORT)
     {
-        case PRIMARY_SORT:
-            a_conf->transactions_list_primary_sorting = value;
-			if (value == PRIMARY_SORT_BY_VALUE_DATE_THEN_OPERATION_DATA)
-			{
-				GtkWidget *combo;
+		a_conf->transactions_list_primary_sorting = value;
+		if (value == PRIMARY_SORT_BY_VALUE_DATE_THEN_OPERATION_DATE)
+		{
+			GtkWidget *combo;
 
-				combo = g_object_get_data (G_OBJECT (widget), "secondary_combo");
-				g_signal_handlers_block_by_func (G_OBJECT (combo),
-												 G_CALLBACK (prefs_page_options_ope_display_sort_changed),
-												 pointeur);
-				a_conf->transactions_list_secondary_sorting = SECONDARY_SORT_BY_VALUE_DATE_THEN_DATE;
-				gtk_combo_box_set_active (GTK_COMBO_BOX (combo), a_conf->transactions_list_secondary_sorting);
-				g_signal_handlers_unblock_by_func (G_OBJECT (combo),
-												   G_CALLBACK (prefs_page_options_ope_display_sort_changed),
-												   pointeur);
-			}
-            break;
-        case SECONDARY_SORT:
-            a_conf->transactions_list_secondary_sorting = value;
-			if (value == SECONDARY_SORT_BY_VALUE_DATE_THEN_DATE)
-			{
-				GtkWidget *combo;
+			combo = g_object_get_data (G_OBJECT (widget), "secondary_combo");
+			g_signal_handlers_block_by_func (G_OBJECT (combo),
+											 G_CALLBACK (prefs_page_options_ope_display_sort_changed),
+											 pointeur);
+			a_conf->transactions_list_secondary_sorting = SECONDARY_SORT_BY_VALUE_DATE_THEN_DATE;
+			gtk_combo_box_set_active (GTK_COMBO_BOX (combo), a_conf->transactions_list_secondary_sorting);
+			g_signal_handlers_unblock_by_func (G_OBJECT (combo),
+											   G_CALLBACK (prefs_page_options_ope_display_sort_changed),
+											   pointeur);
+		}
+	}
+	else
+		a_conf->transactions_list_secondary_sorting = value;
 
-				combo = g_object_get_data (G_OBJECT (widget), "primary_combo");
-				g_signal_handlers_block_by_func (G_OBJECT (combo),
-												 G_CALLBACK (prefs_page_options_ope_display_sort_changed),
-												 pointeur);
-				a_conf->transactions_list_primary_sorting = PRIMARY_SORT_BY_VALUE_DATE_THEN_OPERATION_DATA;
-				gtk_combo_box_set_active (GTK_COMBO_BOX (combo), a_conf->transactions_list_primary_sorting);
-				g_signal_handlers_unblock_by_func (G_OBJECT (combo),
-												   G_CALLBACK (prefs_page_options_ope_display_sort_changed),
-												   pointeur);
-			}
-            break;
-    }
     gsb_file_set_modified (TRUE);
 
     switch (page_number)
@@ -240,7 +224,7 @@ static void prefs_page_options_ope_init_combo_sorting (PrefsPageOptionsOpe *page
 
 	/* Primary sorting option for the transactions */
 	store = gtk_list_store_new (3, G_TYPE_STRING, G_TYPE_INT, G_TYPE_STRING);
-	for (i = 0; i < 3; i++)
+	for (i = 0; i < PRIMARY_SORT_ITEMS_NUMBER; i++)
 	{
         gtk_list_store_append (store, &iter);
         gtk_list_store_set (store, &iter, 0, options_tri_primaire[i], 1, i, 2, str_color, -1);
@@ -265,7 +249,7 @@ static void prefs_page_options_ope_init_combo_sorting (PrefsPageOptionsOpe *page
 
 	/* Secondary sorting option for the transactions */
 	store = gtk_list_store_new (3, G_TYPE_STRING, G_TYPE_INT, G_TYPE_STRING);
-	for (i = 0; i < 5; i++)
+	for (i = 0; i < SECONDARY_SORT_ITEMS_NUMBER; i++)
 	{
         gtk_list_store_append (store, &iter);
         gtk_list_store_set (store, &iter, 0, options_tri_secondaire[i], 1, i, 2, str_color, -1);

@@ -16,8 +16,7 @@
 /*  GNU General Public License for more details.                              */
 /*                                                                            */
 /*  You should have received a copy of the GNU General Public License         */
-/*  along with this program; if not, write to the Free Software               */
-/*  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA */
+/*  along with this program; if not, see <https://www.gnu.org/licenses/>.     */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -814,6 +813,12 @@ static gboolean gsb_form_validate_form_transaction (gint transaction_number,
     widget = gsb_form_widget_get_widget (TRANSACTION_FORM_DEBIT);
     if (widget)
     {
+        if (strcmp(gtk_widget_get_name(widget), "form_entry_error") == 0)
+        {
+            /* not a valid number or formula */
+            gtk_entry_set_text(GTK_ENTRY(widget), ERROR_REAL_STRING);
+            return FALSE;
+        }
         if (gsb_form_widget_check_empty (widget) == FALSE)
             number = gsb_real_opposite (utils_real_get_calculate_entry (widget));
 
@@ -822,6 +827,13 @@ static gboolean gsb_form_validate_form_transaction (gint transaction_number,
 			gint payment_number;
 
 			widget = gsb_form_widget_get_widget (TRANSACTION_FORM_CREDIT);
+			if (strcmp(gtk_widget_get_name(widget), "form_entry_error") == 0)
+			{
+			    /* not a valid number or formula */
+			    gtk_entry_set_text(GTK_ENTRY(widget), ERROR_REAL_STRING);
+			    return FALSE;
+			}
+
             number = utils_real_get_calculate_entry (widget);
 
             if ((gsb_form_widget_check_empty (widget) == TRUE || number.mantissa == 0)
@@ -1891,7 +1903,13 @@ gboolean gsb_form_show (gboolean show)
 	grisbi_win_form_expander_show_frame ();
 
 	if (!grisbi_win_form_expander_is_expanded () && show)
+	{
 		gtk_expander_set_expanded (GTK_EXPANDER (form_expander), TRUE);
+
+		GrisbiAppConf *a_conf = grisbi_app_get_a_conf ();
+		a_conf->formulaire_toujours_affiche = TRUE;
+		gsb_menu_gui_toggle_show_form ();
+	}
 
     return FALSE;
 }
@@ -1916,7 +1934,7 @@ gint gsb_form_get_account_number (void)
     switch (origin)
     {
 		case ORIGIN_VALUE_OTHER:
-			return -2;
+			return 0;
 			break;
 
 		case ORIGIN_VALUE_HOME:
@@ -1929,11 +1947,11 @@ gint gsb_form_get_account_number (void)
 				scheduled_number = GPOINTER_TO_INT (g_object_get_data (G_OBJECT (transaction_form),
 																	   "transaction_number_in_form"));
 				if (!scheduled_number)
-					return -2;
+					return 0;
 				account_number = gsb_data_scheduled_get_account_number (scheduled_number);
 			}
 			else
-				return -2;
+				return 0;
 			break;
 
 		case ORIGIN_VALUE_SCHEDULED:
@@ -1951,7 +1969,7 @@ gint gsb_form_get_account_number (void)
  * ORIGIN_VALUE_OTHER : we are neither on scheduled transactions, neither transactions list, neither welcome page
  * ORIGIN_VALUE_HOME : we are on the welcome page
  * ORIGIN_VALUE_SCHEDULED : we are on the scheduled transactions
- *  0 to x : the account number where we are
+ *  1 to x : the account number where we are
  *  that function is called at each beginning to know where we are and what to do...
  *
  *  \param
@@ -1960,14 +1978,14 @@ gint gsb_form_get_account_number (void)
  **/
 gint gsb_form_get_origin (void)
 {
-    gint account_number;
+    gint account_number = 0;
 
     switch (gsb_gui_navigation_get_current_page())
     {
 		case GSB_ACCOUNT_PAGE:
 			account_number = gsb_gui_navigation_get_current_account ();
 
-			if (account_number != -1)
+			if (account_number > 0)
 				return account_number;
 			break;
 
@@ -2212,7 +2230,7 @@ gboolean gsb_form_entry_get_focus (GtkWidget *entry)
  * \return FALSE
  **/
 gboolean gsb_form_entry_lose_focus (GtkWidget *entry,
-									GdkEventFocus *ev,
+									GdkEvent *ev,
 									gint *ptr_origin)
 {
     const gchar *string;

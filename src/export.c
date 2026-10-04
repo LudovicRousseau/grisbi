@@ -15,8 +15,7 @@
 /*  GNU General Public License for more details.                              */
 /*                                                                            */
 /*  You should have received a copy of the GNU General Public License         */
-/*  along with this program; if not, write to the Free Software               */
-/*  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA */
+/*  along with this program; if not, see <https://www.gnu.org/licenses/>.     */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -384,6 +383,9 @@ static gboolean export_account_change_format (GtkWidget *combo,
 						   ".",
 						   account->extension,
 						   NULL);
+    /* replace any / or \ by - in the filename since / is illegal on Unix and \ on Windows */
+    g_strdelimit(tmp_str, "/\\", '-');
+
     gtk_file_chooser_set_current_name (GTK_FILE_CHOOSER (account->chooser), tmp_str);
     gtk_file_chooser_set_current_folder (GTK_FILE_CHOOSER (account->chooser), gsb_file_get_last_path ());
 	g_free (tmp_str);
@@ -655,9 +657,11 @@ static GtkWidget *create_export_account_resume_page (struct ExportedAccount *acc
 	vbox = gtk_box_new (GTK_ORIENTATION_VERTICAL, MARGIN_BOX);
     gtk_container_set_border_width (GTK_CONTAINER(vbox), BOX_BORDER_WIDTH);
 
+    gchar * tmp_str = g_strdup_printf (_("Export of: %s"),
+            gsb_data_account_get_name (account->account_nb));
     tmpstr = dialogue_make_pango_attribut ("size=\"x-large\"",
-                        g_strdup_printf (_("Export of: %s"),
-                        gsb_data_account_get_name (account->account_nb)));
+            tmp_str);
+    g_free(tmp_str);
 
     label = gtk_label_new (NULL);
     utils_labels_set_alignment (GTK_LABEL (label), 0, 0.5);

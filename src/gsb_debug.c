@@ -1,7 +1,7 @@
 /* ************************************************************************** */
-/*     Copyright (C)	2004-2005 Alain Portal (aportal@univ-montp2.fr)	      */
-/*                  	2006-2006 Benjamin Drieu (bdrieu@april.org)	          */
-/*			https://www.grisbi.org/  			                              */
+/*     Copyright (C)    2004-2005 Alain Portal (aportal@univ-montp2.fr)	      */
+/*                      2006-2006 Benjamin Drieu (bdrieu@april.org)	          */
+/*          https://www.grisbi.org/                                           */
 /*                                                                            */
 /*  This program is free software; you can redistribute it and/or modify      */
 /*  it under the terms of the GNU General Public License as published by      */
@@ -14,8 +14,7 @@
 /*  GNU General Public License for more details.                              */
 /*                                                                            */
 /*  You should have received a copy of the GNU General Public License         */
-/*  along with this program; if not, write to the Free Software               */
-/*  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA */
+/*  along with this program; if not, see <https://www.gnu.org/licenses/>.     */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -47,14 +46,58 @@
 /*END_INCLUDE*/
 
 /*START_STATIC*/
+ static GSList *			non_existent_accounts = NULL;
+ static gint				account_nbre = 0;
 /*END_STATIC*/
 
 /*START_EXTERN*/
 /*END_EXTERN*/
 
+enum DebugAssistantPage
+{
+	DEBUG_ASSISTANT_INTRO= 0,
+	DEBUG_ASSISTANT_TEST_PAGE
+};
 /******************************************************************************/
 /* Private functions                                                          */
 /******************************************************************************/
+/**
+ *
+ *
+ * \param
+ *
+ * \return
+ **/
+static GtkWidget *gsb_debug_test_page (GtkWidget *assistant)
+{
+	GtkWidget *scrolled_window;
+	GtkWidget *text_view;
+	GtkTextBuffer *text_buffer;
+
+	scrolled_window = gtk_scrolled_window_new (FALSE, FALSE);
+	gtk_scrolled_window_set_policy (GTK_SCROLLED_WINDOW (scrolled_window),
+									GTK_POLICY_AUTOMATIC,
+									GTK_POLICY_AUTOMATIC);
+
+	text_view = gtk_text_view_new ();
+	gtk_text_view_set_wrap_mode (GTK_TEXT_VIEW (text_view), GTK_WRAP_WORD);
+	gtk_text_view_set_editable (GTK_TEXT_VIEW(text_view), FALSE);
+	gtk_text_view_set_cursor_visible (GTK_TEXT_VIEW(text_view), FALSE);
+	gtk_text_view_set_left_margin (GTK_TEXT_VIEW(text_view), MARGIN_START);
+	gtk_text_view_set_right_margin (GTK_TEXT_VIEW(text_view), MARGIN_END);
+	gtk_container_add (GTK_CONTAINER (scrolled_window), text_view);
+
+	text_buffer = gtk_text_view_get_buffer (GTK_TEXT_VIEW (text_view));
+	g_object_set_data (G_OBJECT (assistant), "text-buffer-test", text_buffer);
+	gtk_text_buffer_create_tag (text_buffer, "bold", "weight", PANGO_WEIGHT_BOLD, NULL);
+	gtk_text_buffer_create_tag (text_buffer, "x-large", "scale", PANGO_SCALE_X_LARGE, NULL);
+	gtk_text_buffer_create_tag (text_buffer, "indented", "left-margin", 24, NULL);
+
+	gtk_widget_show_all (scrolled_window);
+
+	return scrolled_window;
+}
+
 /**
  * fix the default
  *
@@ -65,21 +108,21 @@
 static gboolean gsb_debug_try_fix (gboolean (*fix) (void))
 {
 
-    if (fix ())
-    {
-        gsb_file_set_modified (TRUE);
+	if (fix ())
+	{
+		gsb_file_set_modified (TRUE);
 		dialogue_hint (_("Grisbi successfully repaired this account file.  "
 						 "You may now save your modifications."),
 					   _("Fix completed"));
-    }
-    else
-    {
+	}
+	else
+	{
 		dialogue_error_hint (_("Grisbi was unable to repair this account file.  "
 							   "No modification has been done."),
 							 _("Unable to fix account"));
-    }
+	}
 
-    return FALSE;
+	return FALSE;
 }
 
 /**
@@ -97,66 +140,69 @@ static void gsb_debug_add_report_page (GtkWidget *assistant,
 									   struct GsbDebugTest *test,
 									   gchar *summary)
 {
-    GtkWidget *button;
-    GtkWidget *label;
-    GtkWidget *vbox;
-    GtkWidget *scrolled_window;
-    gchar *tmp_str;
+	GtkWidget *button;
+	GtkWidget *label;
+	GtkWidget *vbox;
+	GtkWidget *scrolled_window;
+	gchar *tmp_str;
 
-    scrolled_window = gtk_scrolled_window_new (FALSE, FALSE);
-    gtk_scrolled_window_set_policy (GTK_SCROLLED_WINDOW (scrolled_window),
+	scrolled_window = gtk_scrolled_window_new (FALSE, FALSE);
+	gtk_scrolled_window_set_policy (GTK_SCROLLED_WINDOW (scrolled_window),
 									GTK_POLICY_AUTOMATIC,
 									GTK_POLICY_AUTOMATIC);
 
-    vbox = gtk_box_new (GTK_ORIENTATION_VERTICAL, MARGIN_BOX);
-    gtk_container_add (GTK_CONTAINER (scrolled_window), vbox);
+	vbox = gtk_box_new (GTK_ORIENTATION_VERTICAL, MARGIN_BOX);
+	gtk_container_add (GTK_CONTAINER (scrolled_window), vbox);
 
-    label = gtk_label_new (NULL);
-    tmp_str = g_strconcat (dialogue_make_pango_attribut ("size=\"larger\" weight=\"bold\"", _(test->name)),
+	label = gtk_label_new (NULL);
+	tmp_str = g_strconcat (dialogue_make_pango_attribut ("size=\"larger\" weight=\"bold\"", _(test->name)),
 						   "\n\n",
 						   summary,
 						   NULL);
-    gtk_label_set_markup (GTK_LABEL(label), tmp_str);
-    gtk_label_set_line_wrap (GTK_LABEL(label), TRUE);
-    gtk_label_set_justify (GTK_LABEL(label), GTK_JUSTIFY_LEFT);
-    utils_labels_set_alignment (GTK_LABEL (label), GSB_LEFT, GSB_BOTTOM);
-    g_free (tmp_str);
+	gtk_label_set_markup (GTK_LABEL(label), tmp_str);
+	gtk_label_set_line_wrap (GTK_LABEL(label), TRUE);
+	gtk_label_set_justify (GTK_LABEL(label), GTK_JUSTIFY_LEFT);
+	utils_labels_set_alignment (GTK_LABEL (label), GSB_LEFT, GSB_BOTTOM);
+	g_free (tmp_str);
 
-    gtk_box_pack_start (GTK_BOX(vbox), label, FALSE, FALSE, 0);
-    gtk_container_set_border_width (GTK_CONTAINER(vbox), BOX_BORDER_WIDTH);
+	gtk_box_pack_start (GTK_BOX(vbox), label, FALSE, FALSE, 0);
+	gtk_container_set_border_width (GTK_CONTAINER(vbox), BOX_BORDER_WIDTH);
 
-    if (test->instructions)
-    {
-		GtkWidget *expander;
+	if (account_nbre == 1)
+	{
+		if (test->instructions)
+		{
+			GtkWidget *expander;
 
-		tmp_str = g_strconcat ("<b>",_("Details"), "</b>", NULL);
-		expander = gtk_expander_new (tmp_str);
-		g_free (tmp_str);
-		gtk_expander_set_use_markup (GTK_EXPANDER(expander), TRUE);
+			tmp_str = g_strconcat ("<b>",_("Details"), "</b>", NULL);
+			expander = gtk_expander_new (tmp_str);
+			g_free (tmp_str);
+			gtk_expander_set_use_markup (GTK_EXPANDER(expander), TRUE);
 
-		label = gtk_label_new (NULL);
-		gtk_label_set_line_wrap (GTK_LABEL(label), TRUE);
-		gtk_label_set_markup (GTK_LABEL(label), _(test->instructions));
-		utils_widget_set_padding (GTK_WIDGET (label), MARGIN_START, MARGIN_BOX);
-		gtk_container_add (GTK_CONTAINER(expander), label);
-		gtk_box_pack_start (GTK_BOX(vbox), expander, FALSE, FALSE, MARGIN_BOX);
-    }
+			label = gtk_label_new (NULL);
+			gtk_label_set_line_wrap (GTK_LABEL(label), TRUE);
+			gtk_label_set_markup (GTK_LABEL(label), _(test->instructions));
+			utils_widget_set_padding (GTK_WIDGET (label), MARGIN_START, MARGIN_BOX);
+			gtk_container_add (GTK_CONTAINER(expander), label);
+			gtk_box_pack_start (GTK_BOX(vbox), expander, FALSE, FALSE, MARGIN_BOX);
+		}
 
-    if (test->fix)
-    {
-		button = gtk_button_new_with_label (_("Try to fix this inconsistency."));
-		gtk_box_pack_start (GTK_BOX(vbox), button, FALSE, FALSE, 0);
-		g_signal_connect_swapped (G_OBJECT(button),
-								  "clicked",
-								  G_CALLBACK (gsb_debug_try_fix),
-								  (gpointer) test->fix);
-    }
+		if (test->fix)
+		{
+			button = gtk_button_new_with_label (_("Try to fix this inconsistency."));
+			gtk_box_pack_start (GTK_BOX(vbox), button, FALSE, FALSE, 0);
+			g_signal_connect_swapped (G_OBJECT(button),
+									  "clicked",
+									  G_CALLBACK (gsb_debug_try_fix),
+									  (gpointer) test->fix);
+		}
+	}
 
-    gtk_widget_show_all (scrolled_window);
+	gtk_widget_show_all (scrolled_window);
 
-    gsb_assistant_add_page (assistant, scrolled_window, page, page - 1, -1, NULL);
-    gsb_assistant_set_next (assistant, page - 1, page);
-    gsb_assistant_change_button_next (assistant, "gtk-go-forward", GTK_RESPONSE_YES);
+	gsb_assistant_add_page (assistant, scrolled_window, page, page - 1, -1, NULL);
+	gsb_assistant_set_next (assistant, page - 1, page);
+	gsb_assistant_change_button_next (assistant, "gtk-go-forward", GTK_RESPONSE_YES);
 }
 
 /**
@@ -172,41 +218,41 @@ static void gsb_debug_add_report_page (GtkWidget *assistant,
  **/
 static gchar *gsb_debug_reconcile_test (void)
 {
-    GSList *pUserAccountsList = NULL;
-    gchar *pText;
+	GSList *pUserAccountsList = NULL;
+	gchar *pText;
 	gchar *tmp_real_str1;
 	gchar *tmp_real_str2;
 	gchar *tmp_str1;
 	gchar *tmp_str2;
-    gint affected_accounts = 0;
+	gint affected_accounts = 0;
 
-    /* S'il n'y a pas de compte, on quitte */
-    if (!gsb_data_account_get_number_of_accounts ())
-    {
+	/* S'il n'y a pas de compte, on quitte */
+	if (!gsb_data_account_get_number_of_accounts ())
+	{
 		return NULL;
-    }
+	}
 
 	pText = g_strdup("");
 
-    /* On fera la vérification des comptes dans l'ordre préféré
-       de l'utilisateur. On fait une copie de la liste. */
-    pUserAccountsList = g_slist_copy (gsb_data_account_get_list_accounts ());
+	/* On fera la vérification des comptes dans l'ordre préféré
+	   de l'utilisateur. On fait une copie de la liste. */
+	pUserAccountsList = g_slist_copy (gsb_data_account_get_list_accounts ());
 
-    /* Pour chacun des comptes, faire */
-    do
-    {
-        gpointer p_account;
-        gint account_nb;
-        gint reconcile_number;
+	/* Pour chacun des comptes, faire */
+	do
+	{
+		gpointer p_account;
+		gint account_nb;
+		gint reconcile_number;
 
-        p_account = pUserAccountsList->data;
-        account_nb = gsb_data_account_get_no_account (p_account);
+		p_account = pUserAccountsList->data;
+		account_nb = gsb_data_account_get_no_account (p_account);
 
 		/* Si le compte a été rapproché au moins une fois.
-        * Seule la date permet de l'affirmer. */
-        reconcile_number = gsb_data_reconcile_get_account_last_number (account_nb);
-        if (reconcile_number)
-        {
+		* Seule la date permet de l'affirmer. */
+		reconcile_number = gsb_data_reconcile_get_account_last_number (account_nb);
+		if (reconcile_number)
+		{
 			GSList *pTransactionList;
 			GsbReal reconcilied_amount = null_real;
 
@@ -271,19 +317,19 @@ static gchar *gsb_debug_reconcile_test (void)
 				g_free (tmp_real_str1);
 				g_free (tmp_real_str2);
 			}
-        }
-    }
-    while (( pUserAccountsList = pUserAccountsList->next));
+		}
+	}
+	while ((pUserAccountsList = pUserAccountsList->next));
 
-    g_slist_free (pUserAccountsList);
+	g_slist_free (pUserAccountsList);
 
-    if (affected_accounts)
-    {
+	if (affected_accounts)
+	{
 		pText [ strlen(pText) - 1 ] = '\0';
 		return pText;
-    }
+	}
 
-    return NULL;
+	return NULL;
 }
 
 /**
@@ -298,23 +344,23 @@ static gchar *gsb_debug_reconcile_test (void)
  **/
 static gchar *gsb_debug_transfer_test (void)
 {
-    gboolean corrupted_file = FALSE;
-    GSList *pUserAccountsList;
-    gchar *pText = g_strdup("");
+	gboolean corrupted_file = FALSE;
+	GSList *pUserAccountsList;
+	gchar *pText = g_strdup("");
 	gchar *tmp_str;
 	gchar *old_str;
 
-    pUserAccountsList = gsb_data_account_get_list_accounts ();
+	pUserAccountsList = gsb_data_account_get_list_accounts ();
 
-    do
-    {
+	do
+	{
 		gboolean corrupted_account = FALSE;
 		GSList *pTransactionList;
 		gpointer p_account;
 		gint account_nb;
 
-        p_account = pUserAccountsList->data;
-        account_nb = gsb_data_account_get_no_account (p_account);
+		p_account = pUserAccountsList->data;
+		account_nb = gsb_data_account_get_no_account (p_account);
 
 		pTransactionList = gsb_data_transaction_get_transactions_list ();
 		while (pTransactionList)
@@ -385,18 +431,18 @@ static gchar *gsb_debug_transfer_test (void)
 			pTransactionList = pTransactionList->next;
 		}
 		pUserAccountsList = pUserAccountsList->next;
-    }
-    while (pUserAccountsList);
+	}
+	while (pUserAccountsList);
 
-    if (corrupted_file)
-    {
+	if (corrupted_file)
+	{
 		/* Skip both last and first carriage return. */
 		pText [ strlen(pText) - 1 ] = '\0';
 		//~ printf ("%s\n", pText);
 		return pText + 1;
-    }
+	}
 
-    return NULL;
+	return NULL;
 }
 
 /**
@@ -408,17 +454,17 @@ static gchar *gsb_debug_transfer_test (void)
  **/
 static gchar *gsb_debug_category_test  (void)
 {
-    GSList *tmp_list;
-    gchar *returned_text;
-    gchar *tmp_str;
-    gchar *tmp_str1;
-    gboolean invalid = FALSE;
+	GSList *tmp_list;
+	gchar *returned_text;
+	gchar *tmp_str;
+	gchar *tmp_str1;
+	gboolean invalid = FALSE;
 
 	returned_text = g_strdup ("");	/* !!!don't set here my_strdup else returned_text becomes NULL */
 
 	tmp_list = gsb_data_transaction_get_complete_transactions_list ();
-    while (tmp_list)
-    {
+	while (tmp_list)
+	{
 		gint transaction_number;
 		gint category_number;
 		TransactionStruct *transaction;
@@ -461,15 +507,15 @@ static gchar *gsb_debug_category_test  (void)
 			invalid = TRUE;
 		}
 		tmp_list = tmp_list->next;
-    }
+	}
 
-    if (invalid)
+	if (invalid)
 		return returned_text;
-    else
-    {
+	else
+	{
 		g_free (returned_text);
 		return NULL;
-    }
+	}
 }
 
 /**
@@ -482,11 +528,11 @@ static gchar *gsb_debug_category_test  (void)
  **/
 static gboolean gsb_debug_category_test_fix (void)
 {
-    GSList *tmp_list;
+	GSList *tmp_list;
 
-    tmp_list = gsb_data_transaction_get_complete_transactions_list ();
-    while (tmp_list)
-    {
+	tmp_list = gsb_data_transaction_get_complete_transactions_list ();
+	while (tmp_list)
+	{
 		gint transaction_number;
 		gint category_number;
 		TransactionStruct *transaction;
@@ -512,9 +558,9 @@ static gboolean gsb_debug_category_test_fix (void)
 			gsb_data_transaction_set_sub_category_number (transaction_number, 0);
 		}
 		tmp_list = tmp_list->next;
-    }
+	}
 
-    return TRUE;
+	return TRUE;
 }
 
 /**
@@ -526,69 +572,69 @@ static gboolean gsb_debug_category_test_fix (void)
  **/
 static gchar *gsb_debug_budget_test  (void)
 {
-    GSList *tmp_list;
-    gchar *returned_text;
-    gchar *tmp_str;
-    gchar *tmp_str1;
-    gboolean invalid = FALSE;
+	GSList *tmp_list;
+	gchar *returned_text;
+	gchar *tmp_str;
+	gchar *tmp_str1;
+	gboolean invalid = FALSE;
 
 	returned_text = g_strdup (""); 	/* !!!don't set here my_strdup else returned_text becomes NULL */
 
-    tmp_list = gsb_data_transaction_get_complete_transactions_list ();
-    while (tmp_list)
-    {
-        gint transaction_number;
-        gint budget_number;
+	tmp_list = gsb_data_transaction_get_complete_transactions_list ();
+	while (tmp_list)
+	{
+		gint transaction_number;
+		gint budget_number;
 
-        transaction_number = gsb_data_transaction_get_transaction_number (tmp_list->data);
-        budget_number = gsb_data_transaction_get_budgetary_number (transaction_number);
+		transaction_number = gsb_data_transaction_get_transaction_number (tmp_list->data);
+		budget_number = gsb_data_transaction_get_budgetary_number (transaction_number);
 
-        if (gsb_data_budget_get_structure (budget_number))
-        {
-            gint sub_budget_number;
+		if (gsb_data_budget_get_structure (budget_number))
+		{
+			gint sub_budget_number;
 
-            sub_budget_number = gsb_data_transaction_get_sub_budgetary_number (transaction_number);
-            /* budget found, check sub-budget */
-            if (sub_budget_number
-             && !gsb_data_budget_get_sub_budget_structure (budget_number, sub_budget_number))
-            {
-            /* sub-budget not found */
-                tmp_str = g_strdup_printf (_("Transaction %d has budget %d "
+			sub_budget_number = gsb_data_transaction_get_sub_budgetary_number (transaction_number);
+			/* budget found, check sub-budget */
+			if (sub_budget_number
+			 && !gsb_data_budget_get_sub_budget_structure (budget_number, sub_budget_number))
+			{
+			/* sub-budget not found */
+				tmp_str = g_strdup_printf (_("Transaction %d has budget %d "
 											 "and sub-budget %d which does not exist.\n"),
 										   transaction_number,
 										   budget_number,
 										   sub_budget_number);
-                tmp_str1 = g_strconcat (returned_text, tmp_str, NULL);
-                g_free (returned_text);
-                g_free (tmp_str);
-                returned_text = tmp_str1;
-                invalid = TRUE;
-            }
-        }
-        else
-        {
-            /* budget not found */
-            tmp_str = g_strdup_printf (_("Transaction %d has budget %d which does not exist.\n"),
+				tmp_str1 = g_strconcat (returned_text, tmp_str, NULL);
+				g_free (returned_text);
+				g_free (tmp_str);
+				returned_text = tmp_str1;
+				invalid = TRUE;
+			}
+		}
+		else
+		{
+			/* budget not found */
+			tmp_str = g_strdup_printf (_("Transaction %d has budget %d which does not exist.\n"),
 									   transaction_number,
 									   budget_number);
-            tmp_str1 = g_strconcat (returned_text, tmp_str, NULL);
-            g_free (returned_text);
-            g_free (tmp_str);
-            returned_text = tmp_str1;
-            invalid = TRUE;
-        }
-        tmp_list = tmp_list->next;
-    }
+			tmp_str1 = g_strconcat (returned_text, tmp_str, NULL);
+			g_free (returned_text);
+			g_free (tmp_str);
+			returned_text = tmp_str1;
+			invalid = TRUE;
+		}
+		tmp_list = tmp_list->next;
+	}
 
-    if (invalid)
-        return returned_text;
-    else
-    {
-        g_free (returned_text);
-        return NULL;
-    }
+	if (invalid)
+		return returned_text;
+	else
+	{
+		g_free (returned_text);
+		return NULL;
+	}
 
-    return NULL;
+	return NULL;
 }
 
 /**
@@ -601,38 +647,38 @@ static gchar *gsb_debug_budget_test  (void)
  **/
 static gboolean gsb_debug_budget_test_fix (void)
 {
-    GSList *tmp_list;
+	GSList *tmp_list;
 
-    tmp_list = gsb_data_transaction_get_complete_transactions_list ();
-    while (tmp_list)
-    {
-        gint transaction_number;
-        gint budget_number;
+	tmp_list = gsb_data_transaction_get_complete_transactions_list ();
+	while (tmp_list)
+	{
+		gint transaction_number;
+		gint budget_number;
 
-        transaction_number = gsb_data_transaction_get_transaction_number (tmp_list->data);
-        budget_number = gsb_data_transaction_get_budgetary_number (transaction_number);
+		transaction_number = gsb_data_transaction_get_transaction_number (tmp_list->data);
+		budget_number = gsb_data_transaction_get_budgetary_number (transaction_number);
 
-        if (gsb_data_budget_get_structure (budget_number))
-        {
-            gint sub_budget_number;
+		if (gsb_data_budget_get_structure (budget_number))
+		{
+			gint sub_budget_number;
 
-            /* budget found, check sub-budget */
-            sub_budget_number = gsb_data_transaction_get_sub_budgetary_number (transaction_number);
-            if (sub_budget_number
+			/* budget found, check sub-budget */
+			sub_budget_number = gsb_data_transaction_get_sub_budgetary_number (transaction_number);
+			if (sub_budget_number
 				&&
 				!gsb_data_budget_get_sub_budget_structure (budget_number, sub_budget_number))
-            /* sub-budget not found */
-                gsb_data_transaction_set_sub_budgetary_number (transaction_number, 0);
-        }
-        else
-        {
-            /* budget not found */
-            gsb_data_transaction_set_sub_budgetary_number (transaction_number, 0);
-            gsb_data_transaction_set_budgetary_number (transaction_number, 0);
-        }
-        tmp_list = tmp_list->next;
-    }
-    return TRUE;
+			/* sub-budget not found */
+				gsb_data_transaction_set_sub_budgetary_number (transaction_number, 0);
+		}
+		else
+		{
+			/* budget not found */
+			gsb_data_transaction_set_sub_budgetary_number (transaction_number, 0);
+			gsb_data_transaction_set_budgetary_number (transaction_number, 0);
+		}
+		tmp_list = tmp_list->next;
+	}
+	return TRUE;
 }
 
 /**
@@ -644,17 +690,17 @@ static gboolean gsb_debug_budget_test_fix (void)
  **/
 static gchar *gsb_debug_payee_test  (void)
 {
-    GSList *tmp_list;
-    gchar *returned_text;
-    gchar *tmp_str;
-    gchar *tmp_str1;
-    gboolean invalid = FALSE;
+	GSList *tmp_list;
+	gchar *returned_text;
+	gchar *tmp_str;
+	gchar *tmp_str1;
+	gboolean invalid = FALSE;
 
 	returned_text = g_strdup (""); 	/* !!!don't set here my_strdup else returned_text becomes NULL */
 
-    tmp_list = gsb_data_transaction_get_complete_transactions_list ();
-    while (tmp_list)
-    {
+	tmp_list = gsb_data_transaction_get_complete_transactions_list ();
+	while (tmp_list)
+	{
 		gint transaction_number;
 		gint payee_number;
 
@@ -673,16 +719,16 @@ static gchar *gsb_debug_payee_test  (void)
 			invalid = TRUE;
 		}
 		tmp_list = tmp_list->next;
-    }
+	}
 
-    if (invalid)
+	if (invalid)
 		return returned_text;
-    else
-    {
+	else
+	{
 		g_free (returned_text);
 		return NULL;
-    }
-    return NULL;
+	}
+	return NULL;
 }
 
 /**
@@ -695,11 +741,11 @@ static gchar *gsb_debug_payee_test  (void)
  **/
 static gboolean gsb_debug_payee_test_fix (void)
 {
-    GSList *tmp_list;
+	GSList *tmp_list;
 
-    tmp_list = gsb_data_transaction_get_complete_transactions_list ();
-    while (tmp_list)
-    {
+	tmp_list = gsb_data_transaction_get_complete_transactions_list ();
+	while (tmp_list)
+	{
 		gint transaction_number;
 		gint payee_number;
 
@@ -710,26 +756,124 @@ static gboolean gsb_debug_payee_test_fix (void)
 			gsb_data_transaction_set_payee_number (transaction_number, 0);
 
 		tmp_list = tmp_list->next;
-    }
-    return TRUE;
+	}
+	return TRUE;
+}
+/**
+ * check if all the account into the transactions exist
+ *
+ * \param
+ *
+ * \return a gchar containing the transactions with problem or NULL
+ **/
+static gchar *gsb_debug_non_existent_account_test (void)
+{
+	GSList *tmp_list;
+	gchar *returned_text = NULL;
+	gint transaction_nbre = 0;
+	gboolean invalid = FALSE;
+
+	tmp_list = gsb_data_transaction_get_complete_transactions_list ();
+	while (tmp_list)
+	{
+		gint account_number;
+		gint transaction_number;
+
+		transaction_number = gsb_data_transaction_get_transaction_number (tmp_list->data);
+		account_number = gsb_data_transaction_get_account_number (transaction_number);
+		if (!gsb_data_account_exists (account_number))
+		{
+			/* account not found */
+			if (!g_slist_find (non_existent_accounts, GINT_TO_POINTER (account_number)))
+			{
+				non_existent_accounts = g_slist_append (non_existent_accounts, GINT_TO_POINTER (account_number));
+			}
+			transaction_nbre ++;
+			invalid = TRUE;
+		}
+		tmp_list = tmp_list->next;
+	}
+
+	if (invalid)
+	{
+		account_nbre = g_slist_length (non_existent_accounts);
+		if (account_nbre == 1)
+		{
+			returned_text = g_strdup_printf (_("%d transactions have account number %d, which does not exist.\n"),
+											 transaction_nbre,
+											 GPOINTER_TO_INT (non_existent_accounts->data));
+		}
+		else if (account_nbre > 1)
+		{
+			gchar *tmp_str;
+			gchar *tmp_str1;
+			returned_text = g_strdup_printf (_("%d transactions have %d accounts which does not exist. "
+										 "The accounts concerned are:\n"),
+									   transaction_nbre,
+									   account_nbre);
+
+			while (non_existent_accounts)
+			{
+				tmp_str = g_strdup_printf (_("	Account No.: %d\n"), GPOINTER_TO_INT (non_existent_accounts->data));
+				tmp_str1 = g_strconcat (returned_text, tmp_str, NULL);
+				g_free (returned_text);
+				g_free (tmp_str);
+				returned_text = tmp_str1;
+
+				non_existent_accounts = non_existent_accounts->next;
+			}
+			tmp_str = g_markup_printf_escaped ("<span color=\"red\" weight=\"bold\">%s</span>\n\n",
+											   (_("\nGrisbi cannot automatically resolve this issue. "
+												  "You must edit the file directly to reconcile the accounts.")));
+			tmp_str1 = g_strconcat (returned_text, tmp_str, NULL);
+			g_free (returned_text);
+			g_free (tmp_str);
+			returned_text = tmp_str1;
+		}
+	}
+
+	return returned_text;
+}
+
+/**
+ * fix the transactions with non-existent account,
+ * just remove the categories
+ *
+ * \param
+ *
+ * \return TRUE if ok
+ **/
+static gboolean gsb_debug_non_existent_account_test_fix (void)
+{
+	GrisbiWinRun *w_run;
+
+	w_run = grisbi_win_get_w_run ();
+	account_nbre = g_slist_length (non_existent_accounts);
+	if (account_nbre == 1)
+	{
+		gsb_data_account_renum_non_existent_account (w_run->negative_account_number,
+													 GPOINTER_TO_INT (non_existent_accounts->data));
+	}
+
+	return TRUE;
 }
 
 
-/** Tests  */
-static struct GsbDebugTest debug_tests [8] =
+/* <liste des structures tests  */
+static struct GsbDebugTest debug_tests [9] =
 {
-    /* Check for reconciliation inconcistency.  */
-    { N_("Incorrect reconciliation totals"),
-      N_("This test will look at accounts where the reconciled total which does not match with reconciled transactions."),
-      N_("Grisbi found accounts where reconciliation totals are inconsistent with the "
-        "sum of reconcilied transactions and initial balance.\n\n"
-        "The cause may be the elimination or modification of reconciliations or changes "
-        "in the balance of reconciliations in the preferences."),
-      gsb_debug_reconcile_test, NULL },
+	/* Check for reconciliation inconcistency.  */
+	{ N_("Incorrect reconciliation totals"),
+	  N_("This test will look at accounts where the reconciled total which does not match with reconciled transactions."),
+	  N_("Grisbi found accounts where reconciliation totals are inconsistent with the "
+		"sum of reconcilied transactions and initial balance.\n\n"
+		"The cause may be the elimination or modification of reconciliations or changes "
+		"in the balance of reconciliations in the preferences."),
+	  gsb_debug_reconcile_test, NULL },
 
-    { N_("Duplicate sub-categories check"),
-      N_("free"),
-      N_("Due to a bug in previous versions of Grisbi, "
+	{ N_("Duplicate sub-categories check"),
+	  N_("free"),
+	  N_("Due to a bug in previous versions of Grisbi, "
 	 "sub-categories may share the same numeric identifier in some "
 	 "cases, resulting in transactions having two sub-categories.  "
 	 "If you choose to continue, Grisbi will "
@@ -738,11 +882,11 @@ static struct GsbDebugTest debug_tests [8] =
 	 "No transaction will be lost, but in some cases, you "
 	 "will have to manually move transactions to this new "
 	 "sub-category."),
-      gsb_debug_duplicate_categ_check, gsb_debug_duplicate_categ_fix },
+	  gsb_debug_duplicate_categ_check, gsb_debug_duplicate_categ_fix },
 
-    { N_("Duplicate sub-budgetary lines check"),
-      N_("free"),
-      N_("Due to a bug in previous versions of Grisbi, "
+	{ N_("Duplicate sub-budgetary lines check"),
+	  N_("free"),
+	  N_("Due to a bug in previous versions of Grisbi, "
 	 "sub-budgetary lines may share the same numeric id in some "
 	 "cases, resulting in transactions having two sub-budgetary lines.  "
 	 "If you choose to continue, Grisbi will "
@@ -751,39 +895,44 @@ static struct GsbDebugTest debug_tests [8] =
 	 "No transactions will be lost, but in some cases, you "
 	 "will have to manually move transactions to this new "
 	 "sub-budgetary line."),
-      gsb_debug_duplicate_budget_check, gsb_debug_duplicate_budget_fix },
+	  gsb_debug_duplicate_budget_check, gsb_debug_duplicate_budget_fix },
 
-    { N_("Orphan countra-transactions check"),
-      N_("free"),
-      N_("In some rare cases, transfers are incorrectly linked to contra-transactions.  "
+	{ N_("Orphan contra-transactions check"),
+	  N_("free"),
+	  N_("In some rare cases, transfers are incorrectly linked to contra-transactions.  "
 	 "This might be because of bugs or because of imports that failed.\n"
 	 "To fix this, you will have to manually edit your .gsb file "
 	 "(with a text editor) and fix transactions using their numeric ID."),
-      gsb_debug_transfer_test, NULL },
+	  gsb_debug_transfer_test, NULL },
 
-    { N_("Incorrect category/sub-category number"),
-      N_("This test will look for transactions which have non-existent categories/sub-categories."),
-      N_("Grisbi found some transactions with non existents categories/sub-categories "
+	{ N_("Incorrect category/sub-category number"),
+	  N_("This test will look for transactions which have non-existent categories/sub-categories."),
+	  N_("Grisbi found some transactions with non existents categories/sub-categories "
 	 "If you choose to continue, Grisbi will remove that category error "
 	 "and that transactions will have no categories."),
-      gsb_debug_category_test, gsb_debug_category_test_fix },
+	  gsb_debug_category_test, gsb_debug_category_test_fix },
 
-    { N_("Incorrect budget/sub-budget number"),
-      N_("This test will look for transactions which have non-existent budgets/sub-budgets."),
-      N_("Grisbi found some transactions with non existents budgets/sub-budgets "
+	{ N_("Incorrect budget/sub-budget number"),
+	  N_("This test will look for transactions which have non-existent budgets/sub-budgets."),
+	  N_("Grisbi found some transactions with non existents budgets/sub-budgets "
 	 "If you choose to continue, Grisbi will remove that budget error "
 	 "and that transactions will have no budgets."),
-      gsb_debug_budget_test, gsb_debug_budget_test_fix },
+	  gsb_debug_budget_test, gsb_debug_budget_test_fix },
 
-    { N_("Incorrect payee number"),
-      N_("This test will look for transactions which have non-existent payees."),
-      N_("Grisbi found some transactions with non existents payees "
+	{ N_("Incorrect payee number"),
+	  N_("This test will look for transactions which have non-existent payees."),
+	  N_("Grisbi found some transactions with non existents payees "
 	 "If you choose to continue, Grisbi will "
 	 "remove them and that transactions will have no payee."),
-      gsb_debug_payee_test, gsb_debug_payee_test_fix },
+	  gsb_debug_payee_test, gsb_debug_payee_test_fix },
 
+	{ N_("Transactions linked to a non-existent account"),
+	  N_("This test will look for transactions which have non-existent account."),
+	  N_("If Grisbi has found transactions with a non-existent account, "
+		 "we must try to link them to an account."),
+		gsb_debug_non_existent_account_test, gsb_debug_non_existent_account_test_fix},
 
-    { NULL, NULL, NULL, NULL, NULL },
+    { NULL, NULL, NULL, NULL, NULL }
 };
 
 /**
@@ -793,69 +942,74 @@ static struct GsbDebugTest debug_tests [8] =
  *
  * \return
  **/
-static gboolean gsb_debug_enter_test_page ( GtkWidget *assistant)
+static gboolean gsb_debug_enter_test_page (GtkWidget *assistant)
 {
-    GtkTextBuffer *text_buffer = NULL;
-    GtkTextIter text_iter;
-    gboolean inconsistency = FALSE;
-    gint i, page = 2;
+	GtkTextBuffer *text_buffer = NULL;
+	GtkTextIter text_iter;
+	gboolean inconsistency = FALSE;
+	gint i, page = 2;
 	gchar *tmp_str;
 
-    text_buffer = g_object_get_data ( G_OBJECT(assistant), "text-buffer");
+	text_buffer = g_object_get_data (G_OBJECT(assistant), "text-buffer-test");
 
-    while ( gtk_notebook_get_n_pages ( g_object_get_data ( G_OBJECT (assistant),
-							   "notebook")) > 2)
-    {
-	gtk_notebook_remove_page ( g_object_get_data ( G_OBJECT (assistant), "notebook"),
-				   -1);
-    }
-
-    gtk_text_buffer_set_text ( text_buffer, "\n", -1);
-    gtk_text_buffer_get_iter_at_offset ( text_buffer, &text_iter, 1);
-
-    for ( i = 0 ; debug_tests [i] . name != NULL ; i ++)
-    {
-	gchar *result = debug_tests [ i ] . test ();
-
-	if ( result)
+	while (gtk_notebook_get_n_pages (g_object_get_data (G_OBJECT (assistant), "notebook")) > 2)
 	{
-	    if ( !inconsistency)
-	    {
-		/* No inconsistency found yet so put title. */
-		gtk_text_buffer_insert_with_tags_by_name ( text_buffer, &text_iter,
-							   _("Inconsistencies found\n\n"),
-							   -1, "x-large", NULL);
-		gtk_text_buffer_insert ( text_buffer, &text_iter,
-					 _("The following debug tests found inconsistencies "
-					   "in this accounts file:\n\n"),
-					 -1);
-	    }
-
-	    tmp_str = g_strconcat ( "• ", _( debug_tests[i] . name), "\n", NULL);
-	    gtk_text_buffer_insert_with_tags_by_name ( text_buffer, &text_iter,
-						       tmp_str,
-						       -1, "indented", NULL);
-            g_free ( tmp_str);
-
-	    inconsistency = TRUE;
-	    gsb_debug_add_report_page ( assistant, page, &(debug_tests[i]), result);
-	    page ++;
+		gtk_notebook_remove_page (g_object_get_data (G_OBJECT (assistant), "notebook"), -1);
 	}
-    }
 
-    grisbi_win_status_bar_message ( _("Done"));
+	gtk_text_buffer_set_text (text_buffer, "\n", -1);
+	gtk_text_buffer_get_iter_at_offset (text_buffer, &text_iter, 1);
 
-    if ( !inconsistency)
-    {
-	gtk_text_buffer_insert_with_tags_by_name ( text_buffer, &text_iter,
-						   _("No inconsistency found\n\n"),
-						   -1, "x-large", NULL);
-	gtk_text_buffer_insert ( text_buffer, &text_iter,
-				 _("Congratulations, your account file is in good shape!\n"),
-				 -1);
-    }
+	for (i = 0 ; debug_tests [i].name != NULL ; i ++)
+	{
+		gchar *result;
 
-    return TRUE;
+		result = debug_tests [i].test ();
+		if (result)
+		{
+			if (!inconsistency)
+			{
+				/* No inconsistency found yet so put title. */
+				gtk_text_buffer_insert_with_tags_by_name (text_buffer,
+														  &text_iter,
+														  _("Inconsistencies found\n\n"),
+														  -1,
+														  "x-large",
+														  NULL);
+				gtk_text_buffer_insert (text_buffer,
+										&text_iter,
+										_("The following debug tests found inconsistencies "
+										  "in this accounts file:\n\n"),
+										-1);
+			}
+
+			tmp_str = g_strconcat ("• ", _(debug_tests[i].name), "\n", NULL);
+			gtk_text_buffer_insert_with_tags_by_name (text_buffer, &text_iter, tmp_str, -1, "indented", NULL);
+			g_free (tmp_str);
+			gsb_debug_add_report_page (assistant, page, &(debug_tests[i]), result);
+
+			inconsistency = TRUE;
+			page ++;
+		}
+	}
+
+	grisbi_win_status_bar_message (_("Done"));
+
+	if (!inconsistency)
+	{
+		gtk_text_buffer_insert_with_tags_by_name (text_buffer,
+												  &text_iter,
+												  _("No inconsistency found\n\n"),
+												  -1,
+												  "x-large",
+												  NULL);
+		gtk_text_buffer_insert (text_buffer,
+								&text_iter,
+								_("Congratulations, your account file is in good shape!\n"),
+								-1);
+	}
+
+	return TRUE;
 }
 
 /******************************************************************************/
@@ -870,50 +1024,32 @@ static gboolean gsb_debug_enter_test_page ( GtkWidget *assistant)
  **/
 gboolean gsb_debug (void)
 {
-    GtkWidget *assistant;
-    GtkWidget *scrolled_window;
-    GtkWidget *text_view;
-    GtkTextBuffer *text_buffer;
+	GtkWidget *assistant;
 
-    grisbi_win_status_bar_message (_("Checking file for possible corruption..."));
+	grisbi_win_status_bar_message (_("Checking file for possible corruption..."));
 
-    assistant = gsb_assistant_new (_("Grisbi accounts debug"),
+	assistant = gsb_assistant_new (_("Grisbi accounts debug"),
 								   _("This assistant will help you to search your account "
 									 "file for inconsistencies, which can be caused either "
 									 "by bugs or by erroneous manipulation."),
 								   "gsb-bug-32.png",
 								   NULL);
 
-    scrolled_window = gtk_scrolled_window_new (FALSE, FALSE);
-    gtk_scrolled_window_set_policy (GTK_SCROLLED_WINDOW (scrolled_window),
-									GTK_POLICY_AUTOMATIC,
-									GTK_POLICY_AUTOMATIC);
-
-    text_view = gtk_text_view_new ();
-    gtk_text_view_set_wrap_mode (GTK_TEXT_VIEW (text_view), GTK_WRAP_WORD);
-    gtk_text_view_set_editable (GTK_TEXT_VIEW(text_view), FALSE);
-    gtk_text_view_set_cursor_visible (GTK_TEXT_VIEW(text_view), FALSE);
-    gtk_text_view_set_left_margin (GTK_TEXT_VIEW(text_view), MARGIN_START);
-    gtk_text_view_set_right_margin (GTK_TEXT_VIEW(text_view), MARGIN_END);
-    gtk_container_add (GTK_CONTAINER (scrolled_window), text_view);
-
-    text_buffer = gtk_text_view_get_buffer (GTK_TEXT_VIEW (text_view));
-    g_object_set_data (G_OBJECT (assistant), "text-buffer", text_buffer);
-    gtk_text_buffer_create_tag (text_buffer, "bold", "weight", PANGO_WEIGHT_BOLD, NULL);
-    gtk_text_buffer_create_tag (text_buffer, "x-large", "scale", PANGO_SCALE_X_LARGE, NULL);
-    gtk_text_buffer_create_tag (text_buffer, "indented", "left-margin", 24, NULL);
-
-    gsb_assistant_add_page (assistant,
-							scrolled_window,
-							1,
-							0,
+	gsb_assistant_add_page (assistant,
+							gsb_debug_test_page (assistant),
+							DEBUG_ASSISTANT_TEST_PAGE,
+							DEBUG_ASSISTANT_INTRO,
 							-1,
 							G_CALLBACK (gsb_debug_enter_test_page));
 
-    gsb_assistant_run (assistant);
-    gtk_widget_destroy (assistant);
+	gsb_assistant_run (assistant);
+	gtk_widget_destroy (assistant);
 
-    return FALSE;
+	/* free non_existent_accounts list */
+	g_slist_free (non_existent_accounts);
+	non_existent_accounts = NULL;
+
+	return FALSE;
 }
 
 /**

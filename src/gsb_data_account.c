@@ -16,8 +16,7 @@
 /*  GNU General Public License for more details.                              */
 /*                                                                            */
 /*  You should have received a copy of the GNU General Public License         */
-/*  along with this program; if not, write to the Free Software               */
-/*  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA */
+/*  along with this program; if not, see <https://www.gnu.org/licenses/>.     */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -159,6 +158,7 @@ static GSList *list_accounts = NULL;
 static AccountStruct *account_buffer;
 /*END_STATIC*/
 
+/* Bug 2374 : Retour des fonctions : -1 erreur a traiter, 0 pas de compte trouvé */
 /******************************************************************************/
 /* Private functions                                                          */
 /******************************************************************************/
@@ -243,10 +243,24 @@ static AccountStruct *gsb_data_account_get_structure (gint no)
 {
     GSList *tmp;
 
-    if (no < 0)
+	/* fix bug 2374: account number is < -1 */
+    if (no < -1)
     {
+		gchar* tmp_str;
+
+		tmp_str = g_strdup_printf (_("The account number (%d) is < to 0. This is not normal.\n"
+									 "Please contact the Grisbi's team on devel@listes.grisbi.org "
+									 "to find what happened to your current file."),
+								   no);
+		dialogue_error (tmp_str);
+		g_free (tmp_str);
+
 		return NULL;
     }
+	else if (no == 0)
+	{
+		return NULL;
+	}
 
     /* before checking all the accounts, we check the buffer */
     if (account_buffer && account_buffer->account_number == no)
@@ -552,14 +566,14 @@ gint gsb_data_account_get_number_of_accounts (void)
  *
  * \param none
  *
- * \return first number of account, -1 if no accounts
+ * \return first number of account, 0 if no accounts
  **/
 gint gsb_data_account_first_number (void)
 {
     AccountStruct *account;
 
     if (!list_accounts)
-        return -1;
+        return 0;
 
     account = list_accounts->data;
 
@@ -830,7 +844,7 @@ gint gsb_data_account_get_account_by_id (const gchar *account_id)
 
         account = list_tmp->data;
         if (account_id
-			&& account->account_number >= 0
+			&& account->account_number > 0
 			&& !account->closed_account
 			&& account->account_id
 			&& strlen (account->account_id) > 0)
@@ -951,7 +965,12 @@ gint gsb_data_account_get_no_account_by_name (const gchar *account_name)
 
 		account = list_tmp->data;
 		if (!strcmp (account->account_name, account_name))
-			return account->account_number;
+		{
+			if (account->account_number > 0)
+				return account->account_number;
+			else
+				return -1;
+		}
 
 		list_tmp = list_tmp->next;
     }
@@ -1332,7 +1351,7 @@ gint gsb_data_account_get_element_sort (gint account_number,
         g_print ("%s", tmp_str);
         g_free(tmp_str);
 
-        return FALSE;
+		return 0;
     }
 
     account = gsb_data_account_get_structure (account_number);
@@ -3203,14 +3222,14 @@ gint gsb_data_account_get_bet_use_budget (gint account_number)
             break;
         case GSB_TYPE_ASSET:
         case GSB_TYPE_BALANCE:
-            return -1;
+            return 0;
             break;
         default:
-            return -1;
+            return 0;
             break;
     }
 
-    return -1;
+    return 0;
 }
 
 /**
@@ -3890,6 +3909,92 @@ gboolean gsb_data_account_renum_account_number_0 (const gchar *filename)
 	gsb_file_set_modified (TRUE);
 
 	return TRUE;
+}
+
+/**
+ * Renum an account with a negative number to an account number found in the transactions
+ *
+ * \param account_number		account number created when the file was loaded
+ * \param new_account_number	account number found in the transactions
+ *
+ * \return
+ **/
+void gsb_data_account_renum_non_existent_account (gint account_number,
+												  gint new_account_number)
+{
+	GSList *tmp_list;
+	gchar* tmp_str;
+	gint result;
+
+	devel_debug (NULL);
+
+	/* Avertissement avant renommage du compte */
+	tmp_str = g_strdup_printf (_("The account \"%s\" has the number %d.\n"
+								  "It will be renumbered and will have the number \"%d\"."),
+							   gsb_data_account_get_name (account_number),
+							   account_number,
+							   new_account_number);
+
+	result = dialogue_yes_no (tmp_str, _("Renumbered account"), GTK_RESPONSE_YES);
+    g_free (tmp_str);
+	if (!result)
+	{
+		return;
+    }
+	tmp_list = gsb_data_account_get_list_accounts ();
+	while (tmp_list)
+	{
+		AccountStruct *tmp_account;
+
+		tmp_account = tmp_list->data;
+		if (tmp_account->account_number == account_number)
+		{
+			tmp_account->account_number = new_account_number;
+			gsb_file_set_modified (TRUE);
+			gsb_gui_navigation_remove_account (account_number);
+			gsb_gui_navigation_add_account (new_account_number, TRUE);
+
+			return;
+		}
+		tmp_list = tmp_list->next;
+	}
+
+	gsb_file_set_modified (TRUE);
+}
+
+/**
+ *
+ *
+ * \param
+ * \param
+ * \param
+ *
+ * \return
+ **/
+void gsb_data_account_set_marked_balance_from_transaction (gint account_number,
+														   gint transaction_number,
+														   gint sens)
+{
+    gint floating_point;
+	GsbReal adjusted_amout;
+	GsbReal tmp_balance;
+    AccountStruct *account;
+
+    account = gsb_data_account_get_structure (account_number);
+	if (!account)
+		return;
+
+	floating_point = gsb_data_currency_get_floating_point (account->currency);
+	adjusted_amout = gsb_data_transaction_get_adjusted_amount (transaction_number, floating_point);
+	if (sens == OPERATION_POINTEE)
+		tmp_balance = gsb_real_add (account->marked_balance, adjusted_amout);
+	else
+		tmp_balance = gsb_real_sub (account->marked_balance, adjusted_amout);
+
+	if(tmp_balance.mantissa != error_real.mantissa)
+		account->marked_balance = tmp_balance;
+	else
+		account->marked_balance = error_real;
 }
 
 /**

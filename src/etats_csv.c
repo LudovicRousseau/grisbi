@@ -15,8 +15,7 @@
 /*  GNU General Public License for more details.                              */
 /*                                                                            */
 /*  You should have received a copy of the GNU General Public License         */
-/*  along with this program; if not, write to the Free Software               */
-/*  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA */
+/*  along with this program; if not, see <https://www.gnu.org/licenses/>.     */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -40,8 +39,8 @@
 
 /*START_STATIC*/
 static void csv_attach_hsep ( gint x, gint x2, gint y, gint y2);
-static void csv_attach_label ( gchar * text, gdouble properties, gint x, gint x2, gint y, gint y2,
-							  GtkJustification align, gint transaction_number );
+static void csv_attach_label ( gchar * text, int properties, gint x, gint x2, gint y, gint y2,
+							  GtkJustification align, gint transaction_number, const gchar *class );
 static void csv_attach_vsep ( gint x, gint x2, gint y, gint y2);
 static gint csv_finish ( void );
 static gint csv_initialise (GSList * opes_selectionnees, gchar * filename );
@@ -85,8 +84,8 @@ static gint csv_lastline = 1;
  * \param transaction_number the number a transaction to link to (not used as csv
  *            backend is not interactive)
  */
-void csv_attach_label ( gchar * text, gdouble properties, gint x, gint x2, gint y, gint y2,
-                        GtkJustification align, gint transaction_number )
+void csv_attach_label ( gchar * text, int properties, gint x, gint x2, gint y, gint y2,
+                        GtkJustification align, gint transaction_number, const gchar *class )
 {
     gint pad;
 

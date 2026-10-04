@@ -16,8 +16,7 @@
 /*  GNU General Public License for more details.                              */
 /*                                                                            */
 /*  You should have received a copy of the GNU General Public License         */
-/*  along with this program; if not, write to the Free Software               */
-/*  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA */
+/*  along with this program; if not, see <https://www.gnu.org/licenses/>.     */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -130,14 +129,13 @@ static void gtktable_click_sur_ope_etat (gint transaction_number)
  * \return
  **/
 static void gtktable_attach_label (gchar *text,
-								   gdouble properties,
+								   int properties,
 								   int x, int x2, int y, int y2,
 								   GtkJustification align,
-								   gint transaction_number)
+								   gint transaction_number,
+								   const gchar *class)
 {
 	GtkWidget *label;
-	PangoContext *p_context;
-	PangoFontDescription *font_desc;
 	gint x_dim;
 	gint y_dim;
 
@@ -201,22 +199,29 @@ static void gtktable_attach_label (gchar *text,
 		gtk_grid_attach (GTK_GRID (table_etat), label, x, y, x_dim, y_dim);
 		g_object_set_data (G_OBJECT (label), "x_dim", GINT_TO_POINTER (x_dim));
 	}
-	p_context = gtk_widget_get_pango_context (label);
-	font_desc = pango_context_get_font_description (p_context);
 
-	if (((gint) properties) & TEXT_ITALIC)
-		pango_font_description_set_style (font_desc, PANGO_STYLE_ITALIC);
-	if (((gint) properties) & TEXT_BOLD)
-		pango_font_description_set_weight (font_desc, PANGO_WEIGHT_BOLD);
-	if (((gint) properties) & TEXT_HUGE)
-		pango_font_description_set_size (font_desc,
-										 pango_font_description_get_size (font_desc) + 100);
-	if (((gint) properties) & TEXT_LARGE)
-		pango_font_description_set_size (font_desc,
-										 pango_font_description_get_size (font_desc) + 2);
-	if (((gint) properties) & TEXT_SMALL)
-		pango_font_description_set_size (font_desc,
-										 pango_font_description_get_size (font_desc) - 2);
+	if (properties)
+	{
+		PangoContext *p_context;
+		PangoFontDescription *font_desc;
+
+		p_context = gtk_widget_get_pango_context (label);
+		font_desc = pango_context_get_font_description (p_context);
+
+		if (properties & TEXT_ITALIC)
+			pango_font_description_set_style (font_desc, PANGO_STYLE_ITALIC);
+		if (properties & TEXT_BOLD)
+			pango_font_description_set_weight (font_desc, PANGO_WEIGHT_BOLD);
+		if (properties & TEXT_HUGE)
+			pango_font_description_set_size (font_desc,
+											 pango_font_description_get_size (font_desc) + 100);
+		if (properties & TEXT_LARGE)
+			pango_font_description_set_size (font_desc,
+											 pango_font_description_get_size (font_desc) + 2);
+		if (properties & TEXT_SMALL)
+			pango_font_description_set_size (font_desc,
+											 pango_font_description_get_size (font_desc) - 2);
+	}
 	gtk_widget_show (label);
 }
 
